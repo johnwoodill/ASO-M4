@@ -7,6 +7,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 import pandas as pd
 
+
 def download_ASO():
     with open("ASO_download_list.txt") as f:
         for line in f:
@@ -64,3 +65,20 @@ def proc_ASO():
 
     savedat = pd.concat(outlist)
     savedat.to_csv("data/processed/ASO-2013-2019", index=False)
+
+
+
+
+if __name__ == "__main__":
+    
+    download_ASO()
+    
+    proc_ASO()
+
+
+
+
+
+
+
+
