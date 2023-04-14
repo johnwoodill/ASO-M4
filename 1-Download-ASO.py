@@ -64,7 +64,7 @@ def proc_ASO():
 
 
     savedat = pd.concat(outlist)
-    savedat.to_csv("data/processed/ASO-2013-2019", index=False)
+    savedat.to_csv("data/processed/ASO-2013-2019.csv", index=False)
 
 
 
