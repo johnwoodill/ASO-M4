@@ -110,6 +110,3 @@ https://n5eil01u.ecs.nsidc.org/ASO/ASO_50M_SD.001/2019.07.13/ASO_50M_SD_USCASJ_2
 https://n5eil01u.ecs.nsidc.org/ASO/ASO_50M_SD.001/2019.07.14/ASO_50M_SD_USCASF_20190714.tif
 https://n5eil01u.ecs.nsidc.org/ASO/ASO_50M_SD.001/2019.07.15/ASO_50M_SD_USCALB_20190715.tif
 https://n5eil01u.ecs.nsidc.org/ASO/ASO_50M_SD.001/2019.07.16/ASO_50M_SD_USCAMB_20190716.tif
-
-
-
