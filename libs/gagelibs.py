@@ -65,10 +65,10 @@ class StreamGauge:
             stat = jdata['value']['timeSeries'][i]['variable']['options']['option'][0]['value']
             
             indat = parse_data_to_df(jdata['value']['timeSeries'][i])
-            indat = indat.assign(usgs_site = site,
-                var_desc = desc, 
-                unit = unit,
-                stat = stat)
+            indat = indat.assign(usgs_site = self.site,
+                                 var_desc = desc, 
+                                 unit = unit,
+                                 stat = stat)
             indat = indat.assign(date = pd.to_datetime(indat['date']).dt.strftime("%Y-%m-%d"))
             outdat = pd.concat([outdat, indat])
             
