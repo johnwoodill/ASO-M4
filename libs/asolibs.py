@@ -1,11 +1,15 @@
 import glob
+import os 
+
+import pandas as pd
+import geopandas as gpd
+
+
 import xarray as xr
 import rioxarray
-import os 
 import rasterio
-import geopandas as gpd
 from shapely.geometry import Point
-import pandas as pd
+
 
 
 def download_ASO():
@@ -36,7 +40,7 @@ def proc_ASO():
     files = glob.glob("data/ASO/*.tif")
     # file_ = files[0]
 
-    # file_ = "ASO_50M_SD_USCOCB_20160404.tif"
+    file_ = "data/ASO/ASO_50M_SD_USCOCB_20160404.tif"
     outlist = []
     for file_ in files:
         print(f"Processing: {file_}")
@@ -65,6 +69,46 @@ def proc_ASO():
 
     savedat = pd.concat(outlist)
     savedat.to_csv("data/processed/ASO-2013-2019.csv", index=False)
+
+
+
+def proc_ASO_shp(gdf):
+    files = glob.glob("data/ASO/*.tif")
+    # file_ = files[0]
+
+    # file_ = "data/ASO/ASO_50M_SD_USCOCB_20160404.tif"
+    outlist = []
+    for file_ in files:
+        print(f"Processing: {file_}")
+        ds = rioxarray.open_rasterio(file_)
+        ds = ds.rio.reproject("EPSG:4326")
+
+        try: 
+            dat = ds.rio.clip(gdf.geometry, all_touched=True, drop=True, invert=False, from_disk=True) 
+            dat = dat.to_series().reset_index()
+            dat.columns = ['band', 'y', 'x', 'SWE']
+
+            # Get date
+            date = file_.split("/")[-1].split("_")[-1].replace(".tif", "")
+            date = date[0:4] + "-" + date[4:6] + "-" + date[6:8]
+
+            # Get site
+            site = file_.split("/")[-1].split("_")[-2]
+
+            dat = dat[['x', 'y', 'SWE']]
+            dat.columns = ['lon', 'lat', 'SWE']
+
+            dat.insert(0, 'date', date)
+            dat.insert(1, 'site', site)
+
+            outdat = dat.reset_index(drop=True)
+            outlist.append(outdat)
+        except Exception as e:
+            print(e)
+
+    outdat = pd.concat(outlist)
+    return outdat
+
 
 
 
