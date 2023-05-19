@@ -75,18 +75,4 @@ class StreamGauge:
         return outdat
 
 
-# Tuolumne lat/lon gage location
-# 37.627222, -120.983333
 
-# Tuolumne Shapefile
-# https://purl.stanford.edu/yt364hw9952
-
-# Proc date ranges
-# dat = StreamGauge(site = "11290000", start_date = "1950-01-01", end_date = "2022-01-02").proc_json()
-
-# # Save
-# dat.to_csv("data/streamgage_Tuolumne.csv", index = False)
-
-# ddat = dat[dat['var_desc'] == 'Discharge, cubic feet per second']
-# ddat = ddat.assign(kaf = ddat['value'].astype(float) * 0.00002295684)
-# ddat.to_csv("data/streamgage_discharge_Tuolumne.csv", index = False)

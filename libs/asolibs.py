@@ -12,8 +12,8 @@ from shapely.geometry import Point
 
 
 
-def download_ASO():
-    with open("ASO_download_list.txt") as f:
+def download_ASO_SD():
+    with open("ASO_SD_download_list.txt") as f:
         for line in f:
             # Remove any trailing whitespace (such as a newline)
             url = line.strip()
@@ -22,15 +22,38 @@ def download_ASO():
 
             # Loop until the file can be loaded with geopandas
             while True:
-                os.system(f"wget {url} -O data/ASO/{filename}")
+                os.system(f"wget {url} -O data/ASO/SD/{filename}")
 
                 # Try to load the file with geopandas
                 try:
-                    test = xr.open_rasterio(f"data/ASO/{filename}")
+                    test = xr.open_rasterio(f"data/ASO/SD/{filename}")
                     break  # Exit the loop if the file can be loaded
                 except Exception as e:
                     print(f"{filename} cannot be loaded with geopandas: {str(e)}")
-                    os.remove(f"data/ASO/{filename}")  # Remove the file if it can't be loaded
+                    os.remove(f"data/ASO/SD/{filename}")  # Remove the file if it can't be loaded
+                    continue  # Continue the loop to download the file again
+
+
+
+def download_ASO_SWE():
+    with open("ASO_SWE_download_list.txt") as f:
+        for line in f:
+            # Remove any trailing whitespace (such as a newline)
+            url = line.strip()
+            filename = url.split("/")[-1]
+            print(url)
+
+            # Loop until the file can be loaded with geopandas
+            while True:
+                os.system(f"wget {url} -O data/ASO/SWE/{filename}")
+
+                # Try to load the file with geopandas
+                try:
+                    test = xr.open_rasterio(f"data/ASO/SWE/{filename}")
+                    break  # Exit the loop if the file can be loaded
+                except Exception as e:
+                    print(f"{filename} cannot be loaded with geopandas: {str(e)}")
+                    os.remove(f"data/ASO/SWE/{filename}")  # Remove the file if it can't be loaded
                     continue  # Continue the loop to download the file again
 
 
@@ -40,7 +63,7 @@ def proc_ASO():
     files = glob.glob("data/ASO/*.tif")
     # file_ = files[0]
 
-    file_ = "data/ASO/ASO_50M_SD_USCOCB_20160404.tif"
+    # file_ = "data/ASO/ASO_50M_SD_USCOCB_20160404.tif"
     outlist = []
     for file_ in files:
         print(f"Processing: {file_}")
