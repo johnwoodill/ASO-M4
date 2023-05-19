@@ -22,7 +22,7 @@ def download_ASO_SD():
 
             # Loop until the file can be loaded with geopandas
             while True:
-                os.system(f"wget {url} -O data/ASO/SD/{filename}")
+                os.system(f"wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --content-disposition {url} -O data/ASO/SD/{filename}")
 
                 # Try to load the file with geopandas
                 try:
@@ -45,7 +45,7 @@ def download_ASO_SWE():
 
             # Loop until the file can be loaded with geopandas
             while True:
-                os.system(f"wget {url} -O data/ASO/SWE/{filename}")
+                os.system(f"wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --content-disposition {url} -O data/ASO/SWE/{filename}")
 
                 # Try to load the file with geopandas
                 try:
@@ -59,8 +59,8 @@ def download_ASO_SWE():
 
 
 
-def proc_ASO():
-    files = glob.glob("data/ASO/*.tif")
+def proc_ASO_SD():
+    files = glob.glob("data/ASO/SD/*.tif")
     # file_ = files[0]
 
     # file_ = "data/ASO/ASO_50M_SD_USCOCB_20160404.tif"
@@ -77,11 +77,11 @@ def proc_ASO():
         # Get site
         site = file_.split("/")[-1].split("_")[-2]
 
-        dat = ds.to_dataframe("SWE").reset_index()
-        dat = dat[dat['SWE'] != -9999.0]
+        dat = ds.to_dataframe("SD").reset_index()
+        dat = dat[dat['SD'] != -9999.0]
 
-        dat = dat[['x', 'y', 'SWE']]
-        dat.columns = ['lon', 'lat', 'SWE']
+        dat = dat[['x', 'y', 'SD']]
+        dat.columns = ['lon', 'lat', 'SD']
 
         dat.insert(0, 'date', date)
         dat.insert(1, 'site', site)
@@ -91,12 +91,12 @@ def proc_ASO():
 
 
     savedat = pd.concat(outlist)
-    savedat.to_csv("data/processed/ASO-2013-2019.csv", index=False)
+    savedat.to_csv("data/processed/ASO-SD-2013-2019.csv", index=False)
 
 
 
-def proc_ASO_shp(gdf):
-    files = glob.glob("data/ASO/*.tif")
+def proc_ASO_SWE_shp(gdf):
+    files = glob.glob("data/ASO/SWE/*.tif")
     # file_ = files[0]
 
     # file_ = "data/ASO/ASO_50M_SD_USCOCB_20160404.tif"
