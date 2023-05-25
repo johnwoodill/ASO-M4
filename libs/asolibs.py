@@ -58,6 +58,28 @@ def download_ASO_SWE():
 
 
 
+def download_ASO_SWE():
+    with open("ASO_SWE_download_list.txt") as f:
+        for line in f:
+            # Remove any trailing whitespace (such as a newline)
+            url = line.strip()
+            filename = url.split("/")[-1]
+            print(url)
+
+            # Loop until the file can be loaded with geopandas
+            while True:
+                os.system(f"wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --content-disposition {url} -O data/ASO/SWE/{filename}")
+
+                # Try to load the file with geopandas
+                try:
+                    test = xr.open_rasterio(f"data/ASO/SWE/{filename}")
+                    break  # Exit the loop if the file can be loaded
+                except Exception as e:
+                    print(f"{filename} cannot be loaded with geopandas: {str(e)}")
+                    os.remove(f"data/ASO/SWE/{filename}")  # Remove the file if it can't be loaded
+                    continue  # Continue the loop to download the file again
+
+
 
 def proc_ASO_SD():
     files = glob.glob("data/ASO/SD/*.tif")
@@ -97,14 +119,18 @@ def proc_ASO_SD():
 
 def proc_ASO_SWE_shp(gdf):
     files = glob.glob("data/ASO/SWE/*.tif")
-    # file_ = files[0]
 
-    # file_ = "data/ASO/ASO_50M_SD_USCOCB_20160404.tif"
+    # file_ = "data/ASO/SWE/ASO_50M_SWE_USCATB_20180528.tif"
+    # file_= "data/ASO/SWE/ASO_50M_SWE_USCATE_20170129.tif"
     outlist = []
     for file_ in files:
         print(f"Processing: {file_}")
         ds = rioxarray.open_rasterio(file_)
         ds = ds.rio.reproject("EPSG:4326")
+
+        # Setup missing values
+        ds.attrs['_FillValue'] = np.nan
+        ds = ds.where(ds != -9999.0, np.nan)
 
         try: 
             dat = ds.rio.clip(gdf.geometry, all_touched=True, drop=True, invert=False, from_disk=True) 
@@ -138,10 +164,11 @@ def proc_ASO_SWE_shp(gdf):
 
 if __name__ == "__main__":
     
-    download_ASO()
-    
-    proc_ASO()
+    download_ASO_SD()
 
+    download_ASO_SWE()
+    
+    
 
 
 
