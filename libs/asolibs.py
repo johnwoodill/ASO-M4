@@ -1,9 +1,10 @@
 import glob
 import os 
+import datetime
 
 import pandas as pd
 import geopandas as gpd
-
+import numpy as np
 
 import xarray as xr
 import rioxarray
@@ -58,8 +59,8 @@ def download_ASO_SWE():
 
 
 
-def download_ASO_SWE():
-    with open("ASO_SWE_download_list.txt") as f:
+def download_ASO_SWE_new():
+    with open("ASO_SWE_download_list_2020-2023.txt") as f:
         for line in f:
             # Remove any trailing whitespace (such as a newline)
             url = line.strip()
@@ -67,17 +68,18 @@ def download_ASO_SWE():
             print(url)
 
             # Loop until the file can be loaded with geopandas
-            while True:
-                os.system(f"wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --content-disposition {url} -O data/ASO/SWE/{filename}")
-
-                # Try to load the file with geopandas
-                try:
-                    test = xr.open_rasterio(f"data/ASO/SWE/{filename}")
-                    break  # Exit the loop if the file can be loaded
-                except Exception as e:
-                    print(f"{filename} cannot be loaded with geopandas: {str(e)}")
-                    os.remove(f"data/ASO/SWE/{filename}")  # Remove the file if it can't be loaded
-                    continue  # Continue the loop to download the file again
+            os.system(f"wget {url} -O data/temp/aso.zip")
+            os.system("unzip -j data/temp/aso.zip -d data/temp/.")
+            os.system("cp data/temp/*swe*.tif data/ASO/SWE/.")
+            os.system("rm data/temp/*")
+            # Try to load the file with geopandas
+            # try:
+            #     test = xr.open_rasterio(f"data/ASO/SWE/{filename}")
+            #     break  # Exit the loop if the file can be loaded
+            # except Exception as e:
+            #     print(f"{filename} cannot be loaded with geopandas: {str(e)}")
+            #     os.remove(f"data/ASO/SWE/{filename}")  # Remove the file if it can't be loaded
+            #     continue  # Continue the loop to download the file again
 
 
 
@@ -122,6 +124,8 @@ def proc_ASO_SWE_shp(gdf):
 
     # file_ = "data/ASO/SWE/ASO_50M_SWE_USCATB_20180528.tif"
     # file_= "data/ASO/SWE/ASO_50M_SWE_USCATE_20170129.tif"
+    # file_ = "data/ASO/SWE/ASO_Tuolumne_Mosaic_2021Feb24-25_swe_50m.tif"
+    # file_ = "ASO_Tuolumne_2023Apr27_swe_50m.tif"
     outlist = []
     for file_ in files:
         print(f"Processing: {file_}")
@@ -137,12 +141,32 @@ def proc_ASO_SWE_shp(gdf):
             dat = dat.to_series().reset_index()
             dat.columns = ['band', 'y', 'x', 'SWE']
 
-            # Get date
-            date = file_.split("/")[-1].split("_")[-1].replace(".tif", "")
-            date = date[0:4] + "-" + date[4:6] + "-" + date[6:8]
+            if "ASO_Tuolumne" in file_:
+                # Get date
+                sub_date = file_.split("/")[-1].split("_")[-3]
+                year = file_.split("/")[-1].split("_")[-3][0:4]
+                month = file_.split("/")[-1].split("_")[-3][4:7]
+                day = file_.split("/")[-1].split("_")[-3][7:9]
+                date_string = year + "-" + month + "-" + day
 
-            # Get site
-            site = file_.split("/")[-1].split("_")[-2]
+                # Convert the date object to the desired format using strftime()
+                date_object = datetime.datetime.strptime(date_string, "%Y-%b-%d")
+                date = date_object.strftime("%Y-%m-%d")
+
+                # Get site
+                site = file_.split("/")[-1].split("_")[2]
+
+                if site == sub_date:
+                    site = file_.split("/")[-1].split("_")[1]                    
+
+            else:
+
+                # Get date
+                date = file_.split("/")[-1].split("_")[-1].replace(".tif", "")
+                date = date[0:4] + "-" + date[4:6] + "-" + date[6:8]
+
+                # Get site
+                site = file_.split("/")[-1].split("_")[-2]
 
             dat = dat[['x', 'y', 'SWE']]
             dat.columns = ['lon', 'lat', 'SWE']
@@ -168,7 +192,7 @@ if __name__ == "__main__":
 
     download_ASO_SWE()
     
-    
+    download_ASO_SWE_new()
 
 
 
