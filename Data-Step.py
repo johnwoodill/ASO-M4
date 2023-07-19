@@ -124,7 +124,7 @@ aso_dat = aso_dat[aso_dat['SWE'] >= 0]
 aso_dat = aso_dat.assign(year = pd.to_datetime(aso_dat['date']).dt.strftime("%Y"),
     month = pd.to_datetime(aso_dat['date']).dt.strftime("%m"))
 
-aso_dat.to_csv(f"data/{dir_name}/{dir_name}_ASO_data.csv", index=False)
+aso_dat.to_csv(f"data/{dir_name}/{dir_name}_data.csv", index=False)
 
 adat = aso_dat.groupby(['year', 'month']).agg({'SWE': 'mean'}).reset_index()
 
