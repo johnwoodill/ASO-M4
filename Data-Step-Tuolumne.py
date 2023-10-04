@@ -90,7 +90,6 @@ gage_id = "11290000"
 gdf = gpd.read_file(shape_loc)
 gdf = gdf.to_crs(epsg=4326)
 
-
 # Get ASO Data
 aso_dat = proc_ASO_SWE_shp(gdf)
 aso_dat = aso_dat.dropna()
@@ -526,8 +525,8 @@ ldat.to_csv('data/Tuolumne_Watershed/aso_prism_lookup.csv', index=False)
 # ----------------------------------
 # Land cover
 nlcd_files  = ["nlcd_2019_land_cover_l48_20210604.img",
-                "nlcd_2016_land_cover_l48_20210604.img",
-                "nlcd_2013_land_cover_l48_20210604.img"]
+               "nlcd_2016_land_cover_l48_20210604.img",
+               "nlcd_2013_land_cover_l48_20210604.img"]
 
 def get_nlcd(filename):
 
@@ -597,6 +596,15 @@ len(ldat.dropna()) == len(ldat)
 ldat.to_csv('data/Tuolumne_Watershed/aso_nlcd_lookup.csv', index=False)
 
 
+
+
+
+
+
+
+
+
+
 # --------------------------------------------------------------------
 # Bind data together
 # -----------------------------------------------------------
@@ -604,8 +612,6 @@ ldat.to_csv('data/Tuolumne_Watershed/aso_nlcd_lookup.csv', index=False)
 shape_loc = "data/shapefiles/tuolumne_watershed/Tuolumne_Watershed.shp"
 gdf = gpd.read_file(shape_loc)
 gdf = gdf.to_crs(epsg=4326)
-
-
 
 # Get ASO Data
 aso_dat = proc_ASO_SWE_shp(gdf)
@@ -619,8 +625,15 @@ aso_dat = aso_dat.assign(lat = np.round(aso_dat['lat'], 4),
 
 aso_dat['lat_lon'] = aso_dat['lat'].astype(str) + "_" + aso_dat['lon'].astype(str)
 
+
 print("Grouping by and getting averages")
-aso_dat = aso_dat.groupby(['date', 'site', 'lat_lon']).agg({'SWE': np.mean, 'lat': np.mean, 'lon': np.mean}).reset_index()
+aso_dat = aso_dat.groupby(['date', 'lat_lon']).agg({'SWE': np.mean, 'lat': np.mean, 'lon': np.mean}).reset_index()
+
+
+check_unique_lat_lon_by_date(aso_dat, 2016)
+
+[check_unique_lat_lon_by_date(aso_dat, x) for x in [2013, 2016, 2017, 2018, 2019, 2020, 2021]]
+
 
 len(aso_dat)    # 28906376
 
@@ -633,10 +646,14 @@ aso_dat = aso_dat.assign(year = aso_dat['year'].astype(int), month = aso_dat['mo
 aso_elev = pd.read_parquet("data/Tuolumne_Watershed/aso_elevation.parquet")
 aso_elev.columns = ['lat', 'lon', 'elevation']
 aso_elev = aso_elev.assign(lat_lon = aso_elev['lat'].astype(str) + "_" + aso_elev['lon'].astype(str))
+aso_elev = aso_elev.drop(columns=['lat', 'lon'])
+
+# Check that all values are unique
+assert len(aso_elev['lat_lon'].unique()) == len(aso_elev)
 
 
 # Prism data and get data inbetween dates
-prism_dat = pd.read_csv("data/Tuolumne_Watershed/Tuolumne_Watershed_PRISM_daily_1981-2022.csv")
+prism_dat = pd.read_csv("data/Tuolumne_Watershed/Tuolumne_Watershed_PRISM_daily_1981-2020.csv")
 prism_dat = prism_dat.assign(date = pd.to_datetime(prism_dat['date'], format = "%Y%m%d"))
 prism_dat = prism_dat.assign(month = pd.to_datetime(prism_dat['date']).dt.strftime("%m"))
 prism_dat = prism_dat.assign(year = pd.to_datetime(prism_dat['date']).dt.strftime("%Y"))
@@ -644,21 +661,53 @@ prism_dat = prism_dat.assign(year = pd.to_datetime(prism_dat['date']).dt.strftim
 prism_dat = prism_dat.assign(month = prism_dat['month'].astype(int),
                              year = prism_dat['year'].astype(int))
 
-prism_dat = prism_dat.pivot_table(index=['date', 'longitude', 'latitude', 'gridNumber', 'month', 'year'],
-                            columns='var',
+# prism_dat.drop_duplicates()
+
+# prism_dat.groupby(['var']).count()
+
+# len(prism_dat['date'].unique())
+
+
+# test = prism_dat[(prism_dat['date'] == '2012-12-31') & (prism_dat['gridNumber'] == 407556)]
+# test
+
+
+# var           date   longitude   latitude  gridNumber  month  year     ppt    tmax       tmin    tmean
+# 2882628 2012-12-31 -120.583333  37.791667      407556     12  2012     NaN  10.156   1.314000   5.7350
+# 2882629 2012-12-31 -120.583333  37.791667      407556     12  2012  0.0000     NaN        NaN      NaN
+# 2882630 2012-12-31 -120.541667  37.791667      407557     12  2012     NaN  10.094   1.301000   5.6975
+# 2882631 2012-12-31 -120.541667  37.833333      406152     12  2012     NaN   9.985   1.266000   5.6255
+# 2882632 2012-12-31 -120.541667  37.791667      407557     12  2012  0.0000     NaN        NaN      NaN
+
+# len(test) == len(test.dropna())
+
+prism_dat = prism_dat.pivot_table(index=['date', 'gridNumber', 'month', 'year'],
+                            columns='var', aggfunc=np.nanmean,
                             values='value').reset_index()
 
 prism_dat = prism_dat.assign(tmean = (prism_dat['tmax'] + prism_dat['tmin'])/2)
+
+# Fix duplicates nas (manually checked on prism)
+
+# Check for NA
+indat_copy = prism_dat.copy()
+
+# Drop rows with NaN values from the copied DataFrame
+indat_copy = indat_copy.dropna()
+
+# Find rows with NaN values by comparing the original and copied DataFrames
+rows_with_na = indat[~indat.index.isin(indat_copy.index)]
+rows_with_na
 
 
 # Get data since July, not inbetween
 def get_data_from_prev_year(aso_dat, prism_dat):
     aso_dates = aso_dat.drop_duplicates(subset=['date']).reset_index(drop=True)
     years = sorted(aso_dates['year'].unique())
-    dat_ = []
     
     print(f"Starting with {len(years)} years to process.")
-
+    
+    dat_ = []
     for year_ in years:
         print(f"Processing year {year_}.")
         curr_aso = aso_dates[aso_dates['year'] == year_].reset_index(drop=True)
@@ -674,10 +723,13 @@ def get_data_from_prev_year(aso_dat, prism_dat):
             date_ = curr_aso.loc[[i], 'date'][i]
             pindat = indat[(indat['date'] <= pd.to_datetime(date_)) & (indat['date'] > pd.to_datetime(f"{year_-1}-08-01"))]
 
-            pindat = pindat.assign(lat_lon = pindat['latitude'].astype(str) + "_" + pindat['longitude'].astype(str))
-            pindat['snow'] = np.where(pindat['tmean'] <= 0, np.where(pindat['ppt'] > 0, 1, 0), 0)
-            pindat = pindat[pindat['snow'] == 1]
-            pindat = pindat.groupby('lat_lon').agg({'snow': np.sum, 'tmean': np.sum, 'tmax': np.sum, 'tmin': np.sum, 'ppt': np.sum, 'gridNumber': np.mean}).reset_index().drop(columns=['lat_lon'])
+            # pindat = pindat.assign(lat_lon = pindat['latitude'].astype(str) + "_" + pindat['longitude'].astype(str))
+            pindat = pindat.assign(snow = np.where(pindat['tmean'] <= 0, np.where(pindat['ppt'] > 0, 1, 0), 0))
+            # pindat = pindat[pindat['snow'] == 1]
+            pindat = pindat.groupby('gridNumber'). \
+                agg({'snow': np.sum, 'tmean': np.sum, 'tmax': np.sum, 
+                     'tmin': np.sum, 'ppt': np.sum}). \
+                reset_index()
             pindat = pindat.assign(aso_date = date_)    
 
             print(f"Pindat shape for iteration {i}: {pindat.shape}")
@@ -689,9 +741,12 @@ def get_data_from_prev_year(aso_dat, prism_dat):
     print("Finished processing all years.")
     return aso_prism
 
-aso_prism = get_data_from_prev_year(aso_dat, prism_dat)
-aso_prism
-len(aso_prism)
+prism_dat = get_data_from_prev_year(aso_dat, prism_dat)
+
+len(prism_dat) == len(prism_dat.dropna())
+
+prism_dat.groupby('aso_date').count().sum() == len(prism_dat['gridNumber'].unique())*len(prism_dat['aso_date'].unique())
+
 
 # Get data in between aso dates
 def get_data_between_dates(aso_dat, prism_dat):
@@ -779,17 +834,37 @@ def get_data_between_dates(aso_dat, prism_dat):
 
 # Merg elev
 mdat = aso_dat.merge(aso_elev, on=['lat_lon'], how='left')
+mdat
 len(mdat)
+
+len(mdat) == len(mdat.dropna())
+len(mdat) == len(mdat.drop_duplicates())
+
+
+[check_unique_lat_lon_by_date(mdat, x) for x in [2013, 2016, 2017, 2018, 2019, 2020, 2021]]
+
+
 
 # Merge Prism
 aso_prism_lookup = pd.read_csv("data/Tuolumne_Watershed/aso_prism_lookup.csv")
 aso_prism_lookup = aso_prism_lookup.assign(lat_lon = aso_prism_lookup['lat'].astype(str) + "_" + aso_prism_lookup['lon'].astype(str))
-aso_prism_lookup = aso_prism_lookup.drop_duplicates()
+aso_prism_lookup = aso_prism_lookup.drop_duplicates(subset=['lat_lon'])
+aso_prism_lookup = aso_prism_lookup[['lat_lon', 'prism_grid']]
 
 mdat = mdat.merge(aso_prism_lookup, on='lat_lon', how='left')
-mdat = mdat.merge(aso_prism, left_on=['date', 'prism_grid'], right_on=['aso_date', 'gridNumber'], how='left')
 
-mdat.to_parquet("data/Tuolumne_Watershed/model_data_elevation_prism_sinceSep.parquet", compression=None)
+# prism_dat = prism_dat.drop_duplicates(subset=['gridNumber', 'aso_date'])
+
+# prism_dat['aso_date'] = pd.to_datetime(prism_dat['aso_date'])
+# mdat['date'] = pd.to_datetime(mdat['date'])
+
+mdat = mdat.merge(prism_dat, left_on=['date', 'prism_grid'], right_on=['aso_date', 'gridNumber'], how='left')
+
+[check_unique_lat_lon_by_date(mdat, x) for x in [2013, 2016, 2017, 2018, 2019, 2020, 2021]]
+
+mdat.columns
+
+mdat.to_parquet("data/Tuolumne_Watershed/model_data_elevation_prism_sinceSep_V2.parquet", compression=None)
 
 
 # Merge NLCD
@@ -801,44 +876,106 @@ ldat = ldat.drop_duplicates(subset='lat_lon')
 ldat = ldat[['lat_lon', 'nlcd_grid']]
 
 mdat = mdat.merge(ldat, on='lat_lon', how='left')
-len(mdat)
+
+[check_unique_lat_lon_by_date(mdat, x) for x in mdat['year'].unique()]  
 
 ldat_2013 = pd.read_csv("data/NLCD/processed/nlcd_2013_land_cover_l48_20210604.csv")
 ldat_2013 = ldat_2013.assign(lat_lon = ldat_2013['lat'].astype(str) + "_" + ldat_2013['lon'].astype(str))
+ldat_2013 = ldat_2013.drop(columns=['year'])
 
 ldat_2016 = pd.read_csv("data/NLCD/processed/nlcd_2016_land_cover_l48_20210604.csv")
 ldat_2016 = ldat_2016.assign(lat_lon = ldat_2016['lat'].astype(str) + "_" + ldat_2016['lon'].astype(str))
+ldat_2016 = ldat_2016.drop(columns=['year'])
 
 ldat_2019 = pd.read_csv("data/NLCD/processed/nlcd_2019_land_cover_l48_20210604.csv")
 ldat_2019 = ldat_2019.assign(lat_lon = ldat_2019['lat'].astype(str) + "_" + ldat_2019['lon'].astype(str))
+ldat_2019 = ldat_2019.drop(columns=['year'])
+
+# mdat['year'] = pd.to_datetime(mdat['date']).dt.year
 
 # Model data 2013
-mdat1 = mdat[mdat['year'] == "2013"]
+mdat1 = mdat[mdat['year'] <= 2013]
+
+[check_unique_lat_lon_by_date(mdat1, x) for x in mdat1['year'].unique()]
 
 # Merge NLCD
+mdat1 = mdat1.drop(columns=['lat', 'lon'])
 mdat1 = mdat1.merge(ldat_2013, left_on='nlcd_grid', right_on='lat_lon', how='left')
 
+mdat1 = mdat1.rename(columns={'lat_lon_x': 'lat_lon'})
+mdat1 = mdat1.drop(columns=['lat_lon_y'])
+
+[check_unique_lat_lon_by_date(mdat1, x) for x in mdat1['year'].unique()]
+
 # Model data 2016, 2017
-mdat2 = mdat[(mdat['year'] == "2016") | (mdat['year'] == "2017")]
+mdat2 = mdat[(mdat['year'] == 2016) | (mdat['year'] == 2017)]
 
 # Merge NLCD
+mdat2 = mdat2.drop(columns=['lat', 'lon'])
 mdat2 = mdat2.merge(ldat_2016, left_on='nlcd_grid', right_on='lat_lon', how='left')
 
+mdat2 = mdat2.rename(columns={'lat_lon_x': 'lat_lon'})
+mdat2 = mdat2.drop(columns=['lat_lon_y'])
+
+[check_unique_lat_lon_by_date(mdat2, x) for x in mdat2['year'].unique()]
+
 # Model data 2018-2022
-mdat3 = mdat[mdat['year'] >= "2018"]
+mdat3 = mdat[mdat['year'] >= 2018]
 
 # Merge NLCD
+mdat3 = mdat3.drop(columns=['lat', 'lon'])
 mdat3 = mdat3.merge(ldat_2019, left_on='nlcd_grid', right_on='lat_lon', how='left')
+
+mdat3 = mdat3.rename(columns={'lat_lon_x': 'lat_lon'})
+mdat3 = mdat3.drop(columns=['lat_lon_y'])
+
+[check_unique_lat_lon_by_date(mdat3, x) for x in mdat3['year'].unique()]
 
 mdat_nlcd = pd.concat([mdat1, mdat2, mdat3], axis=0)
 
-mdat_nlcd = mdat_nlcd[['date', 'site', 'lat_lon_x', 'SWE', 'lat_x', 'lon_x', 
+mdat_nlcd['lat_x_lon'] = mdat_nlcd['lat'] * mdat_nlcd['lon']
+
+[check_unique_lat_lon_by_date(mdat_nlcd, x) for x in mdat_nlcd['year'].unique()]
+
+save_dat = mdat_nlcd[mdat_nlcd['year'] <= 2021]
+
+save_dat.columns
+
+
+# mdat_nlcd = mdat_nlcd.iloc[:, [0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]]
+
+
+save_dat = save_dat[['date', 'lat_lon_x', 'SWE', 'lat', 'lon', 
        'prism_grid', 'snow', 'tmean', 'tmax', 'tmin', 'ppt', 'gridNumber',
        'aso_date', 'elevation', 'year_x', 'month',
        'lat_x_lon', 'nlcd_grid', 'landcover']]
 
-mdat_nlcd = mdat_nlcd.iloc[:, [0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]]
+save_dat.columns = ['date', 'lat_lon', 'SWE', 'lat', 'lon', 
+       'prism_grid', 'snow', 'tmean', 'tmax', 'tmin', 'ppt', 'gridNumber',
+       'aso_date', 'elevation', 'year', 'month',
+       'lat_x_lon', 'nlcd_grid', 'landcover']
 
-mdat_nlcd.to_parquet("data/Tuolumne_Watershed/model_data_elevation_prism_sinceSep_nlcd.parquet", compression=None)
-mdat = mdat_nlcd
+
+len(save_dat) == len(save_dat.dropna())
+len(save_dat) == len(save_dat.drop_duplicates())
+
+[check_unique_lat_lon_by_date(save_dat, x) for x in [2013, 2016, 2017, 2018, 2019, 2020, 2021]]
+
+save_dat.to_parquet("data/Tuolumne_Watershed/model_data_elevation_prism_sinceSep_nlcd_V2.parquet", compression=None)
+
+
+# CHECKS!
+
+def check_unique_lat_lon_by_date(dataframe, year):
+    dataframe['date'] = pd.to_datetime(dataframe['date'])
+    
+    # Filter the DataFrame for the specified year
+    year_data = dataframe[dataframe['date'].dt.year == year]
+    
+    # Check if all "lat_lon" combinations are unique within the specified year
+    unique_date_count_per_group = year_data.groupby('date')['lat_lon'].nunique()
+
+    is_unique = unique_date_count_per_group.sum() == len(year_data)
+
+    return is_unique
 

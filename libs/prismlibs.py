@@ -195,7 +195,6 @@ def proc_prism(dat, gdf, timestep, par=True):
     return 0
 
 
-
 def proc_monthly(gdf, location):
     # Get shapefile
     # Build dataframe to process years and variables
@@ -230,10 +229,10 @@ def proc_monthly(gdf, location):
     outdat.to_csv(f"data/{location}_PRISM_monthly_1895-2022.csv", index=False)
 
 
-def proc_daily(gdf, location):
+def proc_daily(gdf, location, min_year=1981, max_year=2022):
     
     # Build dataframe to process years and variables
-    year_ = np.arange(1981, 2023, 1).astype(str)
+    year_ = np.arange(min_year, max_year, 1).astype(str)
     var_ = ["tmax", "tmin", "ppt"]
 
     lst_ = [(x, y) for x in year_ for y in var_]
@@ -261,8 +260,19 @@ def proc_daily(gdf, location):
     
     # Concat and save
     outdat = pd.concat(df_list)
-    outdat.to_csv(f"data/{location}_PRISM_daily_1981-2022.csv", index=False)
+    outdat.to_csv(f"data/{location}_PRISM_daily_{min_year}-{max_year}.csv", index=False)
 
+
+if __name__ == "__main__":
+
+    shape_loc = "data/shapefiles/tuolumne_watershed/Tuolumne_Watershed.shp"
+    gdf = gpd.read_file(shape_loc)
+    gdf = gdf.to_crs(epsg=4326)
+
+    min_year = 2015
+    max_year = 2016
+
+    proc_daily(gdf, "Tuolumne_Watershed")
 
 
 

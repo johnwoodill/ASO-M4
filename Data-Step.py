@@ -76,7 +76,7 @@ max_year = sdat['year'].max()
 # -----------------------------------------------------------
 # Get prism data
 # proc_daily(gdf, "Tuolumne_Watershed")
-prism_dat = pd.read_csv("data/Tuolumne_Watershed_PRISM_daily_1981-2022.csv")
+prism_dat = pd.read_csv("data/Tuolumne_Watershed/Tuolumne_Watershed_PRISM_daily_1981-2022.csv")
 prism_dat = prism_dat.assign(date = pd.to_datetime(prism_dat['date'], format = "%Y%m%d"))
 prism_dat = prism_dat.assign(month = pd.to_datetime(prism_dat['date']).dt.strftime("%m"))
 prism_dat = prism_dat.assign(year = pd.to_datetime(prism_dat['date']).dt.strftime("%Y"))
