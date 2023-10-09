@@ -601,6 +601,43 @@ ldat.to_csv('data/Tuolumne_Watershed/aso_nlcd_lookup.csv', index=False)
 
 
 
+# -----------------------------------------------------------
+# Get snotel station data
+#   Currently sourced using "" and exporting as a csv to the working directory
+parent_dir = '.'
+sno_file = f'{parent_dir}/TuolumneSWE_041981_042023.txt'
+sno_data = pd.read_csv(sno_file, comment="#")
+
+# get columns to drop
+incomplete_colms = sno_data.isna()\
+    .any(axis=0)\
+    .where(lambda x: x)\
+    .dropna()\
+    .index.tolist()
+
+# make sure Date sticks around
+try:
+    assert "Date" not in incomplete_colms
+except AssertionError:
+    print(f"ERROR: `Date` column of {sno_file} contained NaT entries.")
+
+# format date -> year
+nrdat = nrdat.assign(year=ndat.Date.apply(
+        lambda x: dt.datetime.strptime(x, "%b %Y").year
+    ))\
+    .drop(columns=["Date"])
+
+# filter for continuous time series & shorten column names
+nrdat = nrdat.drop(columns=incomplete_colms)\
+    .rename(columns=zip(map(
+        lambda x: x.replace("Snow Water Equivalent (in) Start of Month Values", "SWE (in)"), incomplete_colms)
+    ))
+
+# save processed data
+nrdat.to_csv(f"data/{dir_name}/{dir_name}_NRCS_SNOTEL_data.csv", index = False)
+
+
+
 
 
 
