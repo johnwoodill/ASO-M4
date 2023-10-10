@@ -604,44 +604,48 @@ ldat.to_csv('data/Tuolumne_Watershed/aso_nlcd_lookup.csv', index=False)
 # -----------------------------------------------------------
 # Get snotel station data
 #   Currently sourced using "" and exporting as a csv to the working directory
-parent_dir = '.'
-sno_file = f'{parent_dir}/TuolumneSWE_041981_042023.txt'
-sno_data = pd.read_csv(sno_file, comment="#")
 
-# get columns to drop
-incomplete_colms = sno_data.isna()\
-    .any(axis=0)\
-    .where(lambda x: x)\
-    .dropna()\
-    .index.tolist()
+def get_nrcs_snotel():
+    parent_dir = '.'
+    sno_file = f'{parent_dir}/TuolumneSWE_041981_042023.txt'
+    sno_data = pd.read_csv(sno_file, comment="#")
 
-# make sure Date sticks around
-try:
-    assert "Date" not in incomplete_colms
-except AssertionError:
-    print(f"ERROR: `Date` column of {sno_file} contained NaT entries.")
+    # get columns to drop
+    incomplete_colms = sno_data.isna()\
+        .any(axis=0)\
+        .where(lambda x: x)\
+        .dropna()\
+        .index.tolist()
 
-# format date -> year
-nrdat = sno_data
-nrdat = nrdat.assign(year=ndat.Date.apply(
-        lambda x: dt.datetime.strptime(x, "%b %Y").year
-    ))\
-    .drop(columns=["Date"])
+    # make sure Date sticks around
+    try:
+        assert "Date" not in incomplete_colms
+    except AssertionError:
+        print(f"ERROR: `Date` column of {sno_file} contained NaT entries.")
 
-# filter for continuous time series & shorten column names
-nrdat = nrdat.drop(columns=incomplete_colms)
+    # format date -> year
+    nrdat = sno_data
+    nrdat = nrdat.assign(year=ndat.Date.apply(
+            lambda x: dt.datetime.strptime(x, "%b %Y").year
+        ))\
+        .drop(columns=["Date"])
 
-nrdat = nrdat.rename(columns=dict(
-    zip(
-        nrdat.columns,
-        map(
-            lambda x: x.replace("Snow Water Equivalent (in) Start of Month Values", "SWE (in)"), nrdat.columns
+    # filter for continuous time series & shorten column names
+    nrdat = nrdat.drop(columns=incomplete_colms)
+
+    nrdat = nrdat.rename(columns=dict(
+        zip(
+            nrdat.columns,
+            map(
+                lambda x: x.replace("Snow Water Equivalent (in) Start of Month Values", "SWE (in)"), nrdat.columns
+            )
         )
-    )
-))
+    ))
 
-# save processed data
-nrdat.to_csv(f"data/{dir_name}/{dir_name}_NRCS_SNOTEL_data.csv", index = False)
+    # save processed data
+    nrdat.to_csv(f"data/{dir_name}/{dir_name}_NRCS_SNOTEL_data.csv", index = False)
+
+    return nrdat
 
 
 
@@ -987,16 +991,40 @@ save_dat.columns
 
 # mdat_nlcd = mdat_nlcd.iloc[:, [0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]]
 
+# Get NRCS station data & new column names
+nrcs_dat = get_nrcs_snotel()
+nrcs_colms = np.setdiff1d(nrcs_dat.columns, ["date", "year"])
 
-save_dat = save_dat[['date', 'lat_lon_x', 'SWE', 'lat', 'lon', 
-       'prism_grid', 'snow', 'tmean', 'tmax', 'tmin', 'ppt', 'gridNumber',
-       'aso_date', 'elevation', 'year_x', 'month',
-       'lat_x_lon', 'nlcd_grid', 'landcover']]
+# Fix year column name, specify SWE source
+save_dat = save_dat.rename(columns={
+        "year_x": "year",
+        "SWE": "ASO_SWE"
+    })
 
-save_dat.columns = ['date', 'lat_lon', 'SWE', 'lat', 'lon', 
+# merge
+save_dat = save_dat.merge(nrcs_dat, on="year", how="outer")
+
+print(f"save_dat columns after merging NRCS datset:\n{save_dat.columns}")
+
+save_colms = ['date', 'lat_lon_x', 'ASO_SWE', 'lat', 'lon', 
        'prism_grid', 'snow', 'tmean', 'tmax', 'tmin', 'ppt', 'gridNumber',
        'aso_date', 'elevation', 'year', 'month',
        'lat_x_lon', 'nlcd_grid', 'landcover']
+save_colms.extend(nrcs_colms)
+
+# subselect data
+save_dat = save_dat[save_colms]
+
+# remove "_x" suffixes
+save_dat = save_dat.rename(columns = dict(
+    zip(
+        save_colms,
+        map(
+            lambda x: x.removesuffix("_x"),
+            save_colms
+        )
+    )
+))
 
 
 len(save_dat) == len(save_dat.dropna())
