@@ -622,20 +622,26 @@ except AssertionError:
     print(f"ERROR: `Date` column of {sno_file} contained NaT entries.")
 
 # format date -> year
+nrdat = sno_data
 nrdat = nrdat.assign(year=ndat.Date.apply(
         lambda x: dt.datetime.strptime(x, "%b %Y").year
     ))\
     .drop(columns=["Date"])
 
 # filter for continuous time series & shorten column names
-nrdat = nrdat.drop(columns=incomplete_colms)\
-    .rename(columns=zip(map(
-        lambda x: x.replace("Snow Water Equivalent (in) Start of Month Values", "SWE (in)"), incomplete_colms)
-    ))
+nrdat = nrdat.drop(columns=incomplete_colms)
+
+nrdat = nrdat.rename(columns=dict(
+    zip(
+        nrdat.columns,
+        map(
+            lambda x: x.replace("Snow Water Equivalent (in) Start of Month Values", "SWE (in)"), nrdat.columns
+        )
+    )
+))
 
 # save processed data
 nrdat.to_csv(f"data/{dir_name}/{dir_name}_NRCS_SNOTEL_data.csv", index = False)
-
 
 
 
