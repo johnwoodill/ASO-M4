@@ -122,10 +122,6 @@ def proc_ASO_SD():
 def proc_ASO_SWE_shp(gdf):
     files = glob.glob("data/ASO/SWE/*.tif")
 
-    # file_ = "data/ASO/SWE/ASO_50M_SWE_USCATB_20180528.tif"
-    # file_= "data/ASO/SWE/ASO_50M_SWE_USCATE_20170129.tif"
-    # file_ = "data/ASO/SWE/ASO_Tuolumne_Mosaic_2021Feb24-25_swe_50m.tif"
-    # file_ = "ASO_Tuolumne_2023Apr27_swe_50m.tif"
     outlist = []
     for file_ in files:
         print(f"Processing: {file_}")
@@ -159,6 +155,19 @@ def proc_ASO_SWE_shp(gdf):
                 if site == sub_date:
                     site = file_.split("/")[-1].split("_")[1]                    
 
+            elif "Blue" or "TenMileCk" in file_:
+                print(file_)
+                date = file_.split("_")[-3]
+                date = date[0:10]
+                
+                if len(date) == 9:
+                    date_object = datetime.datetime.strptime(date, "%Y%b%d")
+                elif len(date) == 10:
+                    date_object = datetime.datetime.strptime(date, "%Y%B%d")
+
+                date = date_object.strftime("%Y-%m-%d")
+                site = file_.split("_")[-4]
+
             else:
 
                 # Get date
@@ -180,6 +189,8 @@ def proc_ASO_SWE_shp(gdf):
             print(e)
 
     outdat = pd.concat(outlist)
+    outdat['date'].unique()
+
     return outdat
 
 

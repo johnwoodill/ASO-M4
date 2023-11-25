@@ -1,4 +1,3 @@
-#%%
 import pandas as pd
 import numpy as np 
 import pandas as pd
@@ -6,7 +5,6 @@ import os
 import wget
 import zipfile
 import gdal as gdal
-import glob
 import multiprocessing
 from dask.delayed import delayed
 from dask import compute
@@ -195,41 +193,7 @@ def proc_prism(dat, gdf, timestep, par=True):
     return 0
 
 
-def proc_monthly(gdf, location):
-    # Get shapefile
-    # Build dataframe to process years and variables
-    year_ = np.arange(1895, 2023, 1).astype(str)
-    var_ = ["tmax", "tmin", "ppt"]
-
-    lst_ = [(x, y) for x in year_ for y in var_]
-    year = [x[0] for x in lst_]
-    var = [x[1] for x in lst_]
-    indf = pd.DataFrame({'year': year, 'var': var}).reset_index()
-
-    # Get groups
-    gb = indf.groupby('index')
-    gb_i = [gb.get_group(x) for x in gb.groups]
-
-    # Parallel process
-    compute([delayed(proc_prism)(x, gdf, "monthly", par=False) for x in gb_i], scheduler='processes')
-    
-    # Bin up monthly data
-    prism_files = glob.glob('data/prism_output/monthly/*.csv')
-    len_prism_files = len(prism_files)
-
-    outdat = pd.DataFrame()
-    df_list = []
-    for x, file_ in enumerate(prism_files):
-        print(np.round((x/len_prism_files) * 100))
-        # print(file_)
-        df_list.append(pd.read_csv(file_))
-
-    # Concat and save    
-    outdat = pd.concat(df_list)
-    outdat.to_csv(f"data/{location}_PRISM_monthly_1895-2022.csv", index=False)
-
-
-def proc_daily(gdf, location, min_year=1981, max_year=2022):
+def proc_daily(gdf, location, min_year=1981, max_year=2023):
     
     # Build dataframe to process years and variables
     year_ = np.arange(min_year, max_year, 1).astype(str)
@@ -260,19 +224,19 @@ def proc_daily(gdf, location, min_year=1981, max_year=2022):
     
     # Concat and save
     outdat = pd.concat(df_list)
-    outdat.to_csv(f"data/{location}_PRISM_daily_{min_year}-{max_year}.csv", index=False)
+    outdat.to_csv(f"data/{location}/processed/{location}_PRISM_daily_{min_year}-{max_year}.csv", index=False)
 
 
 if __name__ == "__main__":
 
-    shape_loc = "data/shapefiles/tuolumne_watershed/Tuolumne_Watershed.shp"
-    gdf = gpd.read_file(shape_loc)
-    gdf = gdf.to_crs(epsg=4326)
+    # shape_loc = "data/shapefiles/tuolumne_watershed/Tuolumne_Watershed.shp"
+    # gdf = gpd.read_file(shape_loc)
+    # gdf = gdf.to_crs(epsg=4326)
 
-    min_year = 2015
-    max_year = 2016
+    # min_year = 2015
+    # max_year = 2016
 
-    proc_daily(gdf, "Tuolumne_Watershed")
+    # proc_daily(gdf, "Tuolumne_Watershed")
 
 
 
