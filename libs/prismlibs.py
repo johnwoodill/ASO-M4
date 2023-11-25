@@ -229,7 +229,7 @@ def proc_daily(gdf, location, min_year=1981, max_year=2023):
 
 if __name__ == "__main__":
 
-    # shape_loc = "data/shapefiles/tuolumne_watershed/Tuolumne_Watershed.shp"
+    shape_loc = "data/shapefiles/tuolumne_watershed/Tuolumne_Watershed.shp"
     # gdf = gpd.read_file(shape_loc)
     # gdf = gdf.to_crs(epsg=4326)
 
