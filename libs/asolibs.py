@@ -35,7 +35,6 @@ def download_ASO_SD():
                     continue  # Continue the loop to download the file again
 
 
-
 def download_ASO_SWE():
     with open("ASO_SWE_download_list.txt") as f:
         for line in f:
@@ -56,7 +55,6 @@ def download_ASO_SWE():
                     print(f"{filename} cannot be loaded with geopandas: {str(e)}")
                     os.remove(f"data/ASO/SWE/{filename}")  # Remove the file if it can't be loaded
                     continue  # Continue the loop to download the file again
-
 
 
 def download_ASO_SWE_new():
@@ -80,7 +78,6 @@ def download_ASO_SWE_new():
             #     print(f"{filename} cannot be loaded with geopandas: {str(e)}")
             #     os.remove(f"data/ASO/SWE/{filename}")  # Remove the file if it can't be loaded
             #     continue  # Continue the loop to download the file again
-
 
 
 def proc_ASO_SD():
@@ -116,7 +113,6 @@ def proc_ASO_SD():
 
     savedat = pd.concat(outlist)
     savedat.to_csv("data/processed/ASO-SD-2013-2019.csv", index=False)
-
 
 
 def proc_ASO_SWE_shp(gdf):
