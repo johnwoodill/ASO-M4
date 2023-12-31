@@ -13,7 +13,8 @@ import rasterio
 import xarray as xr
 import rioxarray as rxr
 from shapely.geometry import Point
-import gdal
+# import gdal
+from osgeo import gdal
 # from bs4 import BeautifulSoup
 
 import dask.dataframe as dd
@@ -195,13 +196,6 @@ def elevation_function(df, lat_column, lon_column, main_directory, max_workers=8
         _ = list(tqdm(executor.map(fetch_elevation, df.iterrows()), total=len(df), desc="Fetching elevation data"))
 
 
-# -----------------------------------------------------
-# Get slope/aspect data
-# TODO
-
-
-
-# year = "2012"
 def get_ndvi_filelist(year):
 
     url = f"https://www.ncei.noaa.gov/data/land-normalized-difference-vegetation-index/access/{year}/"
@@ -242,9 +236,6 @@ def get_ndvi_filelist(year):
     return filtered_urls
 
 
-
-# 2012-2014
-# year = "2012"
 def proc_ndvi(year, gdf):
     
     files = get_ndvi_filelist(year)
@@ -400,16 +391,20 @@ def find_closest_grid_nlcd_parallel(row):
     return find_closest_grid(row['lat'], row['lon'], ndat, 'lat_lon')
 
 
-def find_closest_grid(lat, lon, dat, return_column):
+def find_closest_grid_elev_grade_aspect_parallel(row):
+    return find_closest_grid(row['lat'], row['lon'], edat, 'index', decimal=0.01)
+
+
+def find_closest_grid(lat, lon, dat, return_column, decimal=0.1):
     min_distance = np.inf
     closest_value = None
 
-    dat = dat[(dat['lat'] >= lat - 0.1) & (dat['lat'] <= lat + 0.1)]
-    dat = dat[(dat['lon'] >= lon - 0.1) & (dat['lon'] <= lon + 0.1)]
+    dat = dat[(dat['lat'] >= lat - decimal) & (dat['lat'] <= lat + decimal)]
+    dat = dat[(dat['lon'] >= lon - decimal) & (dat['lon'] <= lon + decimal)]
 
     for idx in dat.index:
         lat_p, lon_p = dat.at[idx, 'lat'], dat.at[idx, 'lon']
-        distance = haversine(lat, lon, lat_p, lon_p)
+        distance = haversine((lat, lon), (lat_p, lon_p))
 
         if distance < min_distance:
             min_distance = distance
@@ -518,6 +513,53 @@ def proc_basin_prism(gdf, basin_name, min_year, max_year):
     # ldat = ldat.assign(lat_lon = ldat['lat'].astype(str) + "_" + ldat['lon'].astype(str))
 
 
+def proc_elev_grade_aspect_lookup(basin_name, shape_loc):
+
+    global edat
+
+    edat = pd.read_csv(f"data/{basin_name}/elev_grade_aspect/elev_grade_aspect.csv")
+    # edat = edat.assign(lat_lon = edat['lat'].astype(str) + "_" + edat['lon'].astype(str)) 
+    edat['lat_lon'] = edat['lat'].apply(lambda x: f"{x:.{4}f}") + "_" + edat['lon'].apply(lambda x: f"{x:.{4}f}")
+
+    edat = edat.reset_index()
+
+    gdf = gpd.read_file(shape_loc)
+    gdf = gdf.to_crs(epsg=4326)
+
+    ldat = pd.read_csv(f"data/{basin_name}/processed/aso_basin_data.csv")
+    ldat = ldat[['lon', 'lat']].reset_index(drop=True)
+
+    ldat = ldat.assign(lat = np.round(ldat['lat'], 4),
+                             lon = np.round(ldat['lon'], 4))
+
+    ldat['lat_lon'] = ldat['lat'].apply(lambda x: f"{x:.{4}f}") + "_" + ldat['lon'].apply(lambda x: f"{x:.{4}f}")
+    # ldat = ldat.assign(lat_lon = ldat['lat'].astype(str) + "_" + ldat['lon'].astype(str))
+    ldat = ldat.drop_duplicates(subset='lat_lon')
+
+    # ldat = ldat.iloc[0:20, :]
+
+    # Use apply to find the closest grid for all rows
+    # Convert DataFrame to list of dictionaries
+    rows = ldat.to_dict(orient='records')
+
+    # Set the number of workers
+    num_workers = multiprocessing.cpu_count()
+
+    # Initialize multiprocessing Pool
+    with multiprocessing.Pool(num_workers) as pool:
+        results = list(tqdm(pool.imap(find_closest_grid_elev_grade_aspect_parallel, rows), total=len(rows), desc="Processing:"))
+
+    ldat['elev_grade_aspect_grid'] = results
+    
+    merge_dat = edat[['index', 'elev_m', 'slope', 'aspect']]
+
+    ldat = ldat.merge(merge_dat, how='left', left_on='elev_grade_aspect_grid', right_on='index')
+
+    ldat = ldat[['lon', 'lat', 'lat_lon', 'elev_m', 'slope', 'aspect']]
+
+    ldat.to_csv(f"data/{basin_name}/processed/aso_elev_grade_aspect.csv", index=False)
+
+
 def proc_prism_lookup(basin_name, shape_loc):
 
     prism_loc = glob.glob(f"data/{basin_name}/processed/*PRISM*")
@@ -566,8 +608,6 @@ def proc_nlcd(gdf, shape_loc):
     ndat = pd.read_csv(f"data/{basin_name}/processed/nlcd_2019_land_cover_l48_20210604.csv")
     ndat = ndat.assign(lat_lon = ndat['lat'].astype(str) + "_" + ndat['lon'].astype(str))
 
-
-
     # Convert DataFrame to list of dictionaries
     rows = ldat.to_dict(orient='records')
 
@@ -602,10 +642,14 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     [check_unique_lat_lon_by_date(aso_dat, x) for x in aso_dat['year'].unique()]
 
     # Load elevation data from a parquet file, rename columns, and create lat_lon column
-    aso_elev = pd.read_parquet(f"data/{basin_name}/processed/aso_elevation.parquet")
-    aso_elev.columns = ['lat', 'lon', 'elevation']
+    # OLD elevation
+    # aso_elev = pd.read_parquet(f"data/{basin_name}/processed/aso_elevation.parquet")
+    # aso_elev.columns = ['lat', 'lon', 'elevation']
 
-    aso_elev['lat_lon'] = aso_elev['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_elev['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
+    aso_elev = pd.read_csv(f"data/{basin_name}/processed/aso_elev_grade_aspect.csv")
+    aso_elev.columns = ['lat', 'lon', 'lat_lon', 'elevation', 'slope', 'aspect']
+
+    # aso_elev['lat_lon'] = aso_elev['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_elev['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
 
     # Drop original latitude and longitude columns as they are no longer needed
     aso_elev = aso_elev.drop(columns=['lat', 'lon'])
@@ -666,6 +710,8 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
 
     # Save the merged data to a parquet file
     mdat.to_parquet(f"data/{basin_name}/processed/model_data_elevation_prism_sinceSep.parquet", compression=None)
+
+    mdat = pd.read_parquet(f"data/{basin_name}/processed/model_data_elevation_prism_sinceSep.parquet")
 
     # --------------------------------------------------------------------------
     # NLCD Data Merge
@@ -739,12 +785,12 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
 
     save_dat = save_dat[['date', 'lat_lon', 'SWE', 'lat', 'lon', 
            'prism_grid', 'snow', 'tmean', 'tmax', 'tmin', 'ppt', 'gridNumber',
-           'aso_date', 'elevation', 'year', 'month',
+           'aso_date', 'elevation', 'slope', 'aspect', 'year', 'month',
            'lat_x_lon', 'nlcd_grid', 'landcover']]
 
     save_dat.columns = ['date', 'lat_lon', 'SWE', 'lat', 'lon', 
            'prism_grid', 'snow', 'tmean', 'tmax', 'tmin', 'ppt', 'gridNumber',
-           'aso_date', 'elevation', 'year', 'month',
+           'aso_date', 'elevation', 'slope', 'aspect', 'year', 'month',
            'lat_x_lon', 'nlcd_grid', 'landcover']
 
     assert len(save_dat) == len(save_dat.dropna())
@@ -763,6 +809,7 @@ def setup_basin(basin_name):
     os.system(f"mkdir data/{basin_name}")
     os.system(f"mkdir data/{basin_name}/shapefiles")
     os.system(f"mkdir data/{basin_name}/elevation")
+    os.system(f"mkdir data/{basin_name}/elev_grade_aspect")
     os.system(f"mkdir data/{basin_name}/NDVI")
     os.system(f"mkdir data/{basin_name}/processed")
     os.system(f"mkdir data/{basin_name}/models")
@@ -793,12 +840,22 @@ def proc_aso_swe(gdf, basin_name, decimal_point=4):
     lat_lon_dat.to_csv(f"data/{basin_name}/processed/aso_basin_data.csv", index=False)
 
 basin_name = "Tuolumne_Watershed"
-basin_name = "Blue_Dillon_Watershed"
-basin_name = "Dolores_Watershed"
-basin_name = "Conejos_Watershed"
+min_year = 1981
+max_year = 2020
 
+basin_name = "Blue_Dillon_Watershed"
+min_year = 1981
+max_year = 2023
+
+basin_name = "Dolores_Watershed"
 min_year = 1981
 max_year = 2022
+
+
+basin_name = "Conejos_Watershed"
+min_year = 1981
+max_year = 2022
+
 
 def main(basin_name, min_year, max_year):
     
@@ -811,7 +868,12 @@ def main(basin_name, min_year, max_year):
 
     proc_aso_swe(gdf, basin_name)
 
-    proc_elevation(gdf, basin_name)
+    # TO DO --- ADD FUNCTION TO PROCESS THIS
+    proc_grade_elev_watershed(gdf, basin_name)
+
+    proc_elev_grade_aspect_lookup(basin_name, shape_loc)
+
+    # proc_elevation(gdf, basin_name)
 
     proc_basin_prism(gdf, basin_name, min_year, max_year)
 
@@ -843,6 +905,19 @@ if __name__ == "__main__":
 
     # proc_elevation(gdf, basin_name)
 
+    # fp = gpd.read_file('data/Tuolumne_Watershed/shapefiles/Tuolumne_Watershed.shp')
+    # proc_grade_elev_watershed("Tuolumne_Watershed", fp)
+
+    # fp = gpd.read_file('data/Blue_Dillon_Watershed/shapefiles/Blue_Dillon.shp')
+    # proc_grade_elev_watershed("Blue_Dillon_Watershed", fp)
+    
+    # fp = gpd.read_file('data/Conejos_Watershed/shapefiles/Conejos_waterbasin.shp')
+    # proc_grade_elev_watershed("Conejos_Watershed", fp)
+    
+    # fp = gpd.read_file('data/Dolores_Watershed/shapefiles/Dolores_waterbasin.shp')
+    # proc_grade_elev_watershed("Dolores_Watershed", fp)
+
+
     # proc_basin_prism(gdf, basin_name, min_year, max_year)
 
     # proc_prism_lookup(basin_name, shape_loc)
@@ -850,57 +925,3 @@ if __name__ == "__main__":
     # proc_nlcd(gdf, shape_loc)
 
     # bind_data(basin_name, shape_loc, min_year=1981, max_year=2023)
-
-
-
-
-
-
-
-    # # Open the GeoTIFF file
-    # with rasterio.open('output_dem.tif') as src:
-    #     # Read the elevation data
-    #     elevation = src.read(1)
-        
-    #     # Get the pixel size
-    #     pixel_size_x, pixel_size_y = src.res
-        
-    #     # Calculate slope and aspect
-    #     slope, aspect = calculate_slope_aspect(elevation, pixel_size_x, pixel_size_y)
-
-    # with rasterio.open('output_dem.tif') as src:
-    #     meta = src.meta
-    #     meta.update(dtype=rasterio.float32)
-
-    #     with rasterio.open('slope.tif', 'w', **meta) as dst:
-    #         dst.write(slope.astype(rasterio.float32), 1)
-
-    #     with rasterio.open('aspect.tif', 'w', **meta) as dst:
-    #         dst.write(aspect.astype(rasterio.float32), 1)
-
-
-
-    # import pandas as pd
-    # import geopandas as gpd
-    # import rasterio
-    # from rasterio.transform import from_origin
-    # from scipy.interpolate import griddata
-    # import numpy as np
-
-    # # Load elevation data from a parquet file, rename columns, and create lat_lon column
-    # aso_elev = pd.read_parquet(f"data/{basin_name}/processed/aso_elevation.parquet")
-    # aso_elev.columns = ['lat', 'lon', 'elevation']
-    
-    # points = aso_elev[['lat', 'lon', 'elevation']].values
-
-    # grid_lon = np.linspace(points[:,0].min(), points[:,0].max(), num=1000)  # Adjust as needed
-    # grid_lat = np.linspace(points[:,1].min(), points[:,1].max(), num=1000)  # Adjust as needed
-    # grid_lon, grid_lat = np.meshgrid(grid_lon, grid_lat)
-
-    # grid_elevation = griddata(points[:,0:2], points[:,2], (grid_lon, grid_lat), method='linear')
-
-    # transform = from_origin(grid_lon.min(), grid_lat.max(), abs(grid_lon[0,0] - grid_lon[0,1]), abs(grid_lat[0,0] - grid_lat[1,0]))
-
-    # with rasterio.open('output_dem.tif', 'w', driver='GTiff', height=grid_elevation.shape[0], width=grid_elevation.shape[1], count=1, dtype=str(grid_elevation.dtype), crs='+proj=latlong', transform=transform) as dst:
-    #     dst.write(grid_elevation, 1)
-

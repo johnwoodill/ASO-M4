@@ -4,7 +4,8 @@ import pandas as pd
 import os
 import wget
 import zipfile
-import gdal as gdal
+# import gdal as gdal
+from osgeo import gdal
 import multiprocessing
 from dask.delayed import delayed
 from dask import compute

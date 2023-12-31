@@ -44,7 +44,8 @@ def checkboard_cv_model(watershed):
         doy = pd.to_datetime(mdat['date']).dt.strftime("%j"))
 
     X = mdat[['year', 'snow', 'tmean', 'ppt', 'month', 'doy', 
-              'lat', 'lon', 'lat_x_lon', 'elevation', 'landcover']]
+              'lat', 'lon', 'lat_x_lon', 'elevation', 'slope', 'aspect', 
+              'landcover']]
 
     y = np.log(1 + mdat['SWE'])
 
@@ -161,7 +162,7 @@ def train_full_model(watershed):
     # --------------------------------------------------
     # Train full model for predictions
     X = mdat[['snow', 'tmean', 'ppt', 'month', 'doy', 
-              'lat', 'lon', 'lat_x_lon', 'elevation', 'landcover']]
+              'lat', 'lon', 'lat_x_lon', 'elevation', 'slope', 'aspect', 'landcover']]
 
     y = np.log(1 + mdat['SWE'])
 
