@@ -2,6 +2,7 @@ import pandas as pd
 import geopandas as gpd
 import rioxarray as rxr
 import xarray as xr
+import numpy as np
 
 
 def get_nlcd(filename, shape_loc, basin_name):
