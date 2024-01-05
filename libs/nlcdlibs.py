@@ -3,6 +3,31 @@ import geopandas as gpd
 import rioxarray as rxr
 import xarray as xr
 import numpy as np
+import multiprocessing
+
+
+
+def find_closest_grid_nlcd_parallel(row):
+    return find_closest_grid(row['lat'], row['lon'], ndat, 'lat_lon', decimal=0.001)
+
+
+def find_closest_grid(lat, lon, dat, return_column, decimal=0.1):
+    min_distance = np.inf
+    closest_value = None
+
+    dat = dat[(dat['lat'] >= lat - decimal) & (dat['lat'] <= lat + decimal)]
+    dat = dat[(dat['lon'] >= lon - decimal) & (dat['lon'] <= lon + decimal)]
+
+    for idx in dat.index:
+        lat_p, lon_p = dat.at[idx, 'lat'], dat.at[idx, 'lon']
+        distance = haversine(lat, lon, lat_p, lon_p)
+
+        if distance < min_distance:
+            min_distance = distance
+            closest_value = dat.at[idx, return_column]
+
+    return closest_value
+
 
 
 def get_nlcd(filename, shape_loc, basin_name):
@@ -64,10 +89,6 @@ def proc_nlcd(gdf, shape_loc, basin_name):
     ldat = ldat.drop_duplicates(subset='lat_lon')
     ldat = ldat[['lon', 'lat']].reset_index(drop=True)
     
-    # ldat.to_csv(f"data/{basin_name}/unique_ASO_grids.csv", index=False)
-
-    # ldat = pd.read_csv(f"data/{basin_name}/unique_ASO_grids.csv")
-
     global ndat
 
     ndat = pd.read_csv(f"data/{basin_name}/processed/nlcd_2019_land_cover_l48_20210604.csv")

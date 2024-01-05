@@ -33,6 +33,16 @@ from libs.misclibs import *
 
 tqdm.pandas()
 
+basin_name = "Tuolumne_Watershed"
+min_year = 1981
+max_year = 2021  # Needs to be 2021
+    
+shape_loc = glob.glob(f"data/{basin_name}/shapefiles/*.shp")[0]
+
+gdf = gpd.read_file(shape_loc)
+gdf = gdf.to_crs(epsg=4326)
+
+
 
 def bind_data(basin_name, shape_loc, min_year, max_year):
 
