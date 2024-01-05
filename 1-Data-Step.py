@@ -5,7 +5,6 @@ import urllib.request
 import time
 import multiprocessing
 from datetime import datetime, timedelta
-
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -14,7 +13,9 @@ import xarray as xr
 import rioxarray as rxr
 from shapely.geometry import Point
 # import gdal
-from osgeo import gdal
+# from osgeo import gdal
+# from osgeo import gdal_array
+# from osgeo import gdalconst
 # from bs4 import BeautifulSoup
 
 import dask.dataframe as dd
@@ -388,12 +389,17 @@ def find_closest_grid_prism_parallel(row):
 
 
 def find_closest_grid_nlcd_parallel(row):
-    return find_closest_grid(row['lat'], row['lon'], ndat, 'lat_lon')
+    return find_closest_grid(row['lat'], row['lon'], ndat, 'lat_lon', decimal=0.001)
 
 
 def find_closest_grid_elev_grade_aspect_parallel(row):
     return find_closest_grid(row['lat'], row['lon'], edat, 'index', decimal=0.01)
 
+lat = 37.7396
+lon = -119.2703
+dat = ndat
+return_column = "lat_lon"
+decimal=0.001
 
 def find_closest_grid(lat, lon, dat, return_column, decimal=0.1):
     min_distance = np.inf
@@ -663,7 +669,8 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     # Merge Prism
 
     # Load PRISM data, convert date to datetime, and extract month and year
-    prism_dat = pd.read_csv(f"data/{basin_name}/processed/{basin_name}_PRISM_daily_{min_year}-{max_year}.csv")
+    prism_dat_loc = glob.glob(f"data/{basin_name}/processed/*PRISM_daily*")[0]
+    prism_dat = pd.read_csv(prism_dat_loc)
     prism_dat['date'] = pd.to_datetime(prism_dat['date'], format="%Y%m%d")
     prism_dat['month'] = prism_dat['date'].dt.month
     prism_dat['year'] = prism_dat['date'].dt.year
@@ -711,7 +718,7 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     # Save the merged data to a parquet file
     mdat.to_parquet(f"data/{basin_name}/processed/model_data_elevation_prism_sinceSep.parquet", compression=None)
 
-    mdat = pd.read_parquet(f"data/{basin_name}/processed/model_data_elevation_prism_sinceSep.parquet")
+    # mdat = pd.read_parquet(f"data/{basin_name}/processed/model_data_elevation_prism_sinceSep.parquet")
 
     # --------------------------------------------------------------------------
     # NLCD Data Merge
@@ -719,7 +726,7 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     # Load NLCD lookup data, round latitude and longitude to 4 decimal places,
     # and create a new identifier combining latitude and longitude
     ldat = pd.read_csv(f"data/{basin_name}/processed/aso_nlcd_lookup.csv")
-    ldat = ldat.assign(lat=np.round(ldat['lat'], 4), lon=np.round(ldat['lon'], 4))
+    # ldat = ldat.assign(lat=np.round(ldat['lat'], 4), lon=np.round(ldat['lon'], 4))
 
     ldat['lat_lon'] = ldat['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + ldat['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
 
@@ -744,6 +751,8 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
 
     ldat_2019 = pd.read_csv(f"data/{basin_name}/processed/nlcd_2019_land_cover_l48_20210604.csv")
     ldat_2019['lat_lon'] = ldat_2019['lat'].astype(str) + "_" + ldat_2019['lon'].astype(str)
+    # ldat_2019['lat_lon'] = ldat_2019['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + ldat_2019['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
+
     ldat_2019 = ldat_2019.drop(columns=['year'])
 
     # Segment the main data into three parts based on the year and merge with respective NLCD data
@@ -839,9 +848,12 @@ def proc_aso_swe(gdf, basin_name, decimal_point=4):
 
     lat_lon_dat.to_csv(f"data/{basin_name}/processed/aso_basin_data.csv", index=False)
 
+
+
+
 basin_name = "Tuolumne_Watershed"
 min_year = 1981
-max_year = 2020
+max_year = 2021
 
 basin_name = "Blue_Dillon_Watershed"
 min_year = 1981

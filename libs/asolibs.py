@@ -151,7 +151,7 @@ def proc_ASO_SWE_shp(gdf):
                 if site == sub_date:
                     site = file_.split("/")[-1].split("_")[1]                    
 
-            elif "Blue" or "TenMileCk" in file_:
+            elif "Blue" in file_ or "TenMileCk" in file_:
                 print(file_)
                 date = file_.split("_")[-3]
                 date = date[0:10]
@@ -165,7 +165,6 @@ def proc_ASO_SWE_shp(gdf):
                 site = file_.split("_")[-4]
 
             else:
-
                 # Get date
                 date = file_.split("/")[-1].split("_")[-1].replace(".tif", "")
                 date = date[0:4] + "-" + date[4:6] + "-" + date[6:8]

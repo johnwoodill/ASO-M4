@@ -38,10 +38,13 @@ my_lr_scheduler = LearningRateScheduler(adapt_learning_rate)
 def checkboard_cv_model(watershed):
 
     mdat = pd.read_parquet(f"data/{watershed}/processed/model_data_elevation_prism_sinceSep_nlcd.parquet")
+    mdat = pd.read_parquet(f"data/{watershed}/model_data_elevation_prism_sinceSep_nlcd_V2.parquet")
 
     mdat = mdat.assign(year = pd.to_datetime(mdat['date']).dt.strftime("%Y"),
         month = pd.to_datetime(mdat['date']).dt.strftime("%m"),
         doy = pd.to_datetime(mdat['date']).dt.strftime("%j"))
+
+    # mdat = mdat[mdat['year'].isin(["2021", "2022", "2023"])].reset_index(drop=True)
 
     X = mdat[['year', 'snow', 'tmean', 'ppt', 'month', 'doy', 
               'lat', 'lon', 'lat_x_lon', 'elevation', 'slope', 'aspect', 
@@ -137,7 +140,7 @@ def checkboard_cv_model(watershed):
     model_dat['y_true'].max()
     model_dat['y_pred'].max()
 
-    meta_data = {'basin': basin_name,
+    meta_data = {'basin': watershed,
                  'cv_results': results}
 
     meta_data = {key: str(value) for key, value in meta_data.items()}
@@ -224,6 +227,8 @@ def train_full_model(watershed):
 
 
 if __name__ == "__main__":
+
+    watershed = "Tuolumne_Watershed"
 
     watershed = "Blue_Dillon_Watershed"
 
