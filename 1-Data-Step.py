@@ -48,18 +48,8 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     aso_dat['year'] = pd.to_datetime(aso_dat['date']).dt.year
     aso_dat['month'] = pd.to_datetime(aso_dat['date']).dt.month
 
-    # Check unique latitude and longitude by date
-    [check_unique_lat_lon_by_date(aso_dat, x) for x in aso_dat['year'].unique()]
-
-    # Load elevation data from a parquet file, rename columns, and create lat_lon column
-    # OLD elevation
-    # aso_elev = pd.read_parquet(f"data/{basin_name}/processed/aso_elevation.parquet")
-    # aso_elev.columns = ['lat', 'lon', 'elevation']
-
     aso_elev = pd.read_csv(f"data/{basin_name}/processed/aso_elev_grade_aspect.csv")
     aso_elev.columns = ['lat', 'lon', 'lat_lon', 'elevation', 'slope', 'aspect']
-
-    # aso_elev['lat_lon'] = aso_elev['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_elev['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
 
     # Drop original latitude and longitude columns as they are no longer needed
     aso_elev = aso_elev.drop(columns=['lat', 'lon'])
@@ -96,13 +86,10 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     assert len(mdat) == len(mdat.dropna()), "Missing values after merging with elevation data"
     assert len(mdat) == len(mdat.drop_duplicates()), "Duplicate values after merging with elevation data"
 
-    # Check unique latitude and longitude by date
-    [check_unique_lat_lon_by_date(mdat, x) for x in mdat['year'].unique()]
-
     # Load ASO PRISM lookup data, create lat_lon identifier, and merge with main data
     aso_prism_lookup = pd.read_csv(f"data/{basin_name}/processed/aso_prism_lookup.csv")
-    # aso_prism_lookup['lat_lon'] = aso_prism_lookup['lat'].astype(str) + "_" + aso_prism_lookup['lon'].astype(str)
 
+    # Get lat_lon
     aso_prism_lookup['lat_lon'] = aso_prism_lookup['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_prism_lookup['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
 
     aso_prism_lookup = aso_prism_lookup.drop_duplicates(subset='lat_lon')[['lat_lon', 'prism_grid']]
@@ -112,9 +99,6 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     mdat = mdat.merge(prism_dat, left_on=['date', 'prism_grid'], right_on=['aso_date', 'gridNumber'], how='left')
 
     mdat = mdat[mdat['year'] <= max_year]
-
-    # Check unique latitude and longitude by date after merging PRISM data
-    [check_unique_lat_lon_by_date(mdat, x) for x in mdat['year'].unique()]
 
     assert len(mdat) == len(mdat.dropna()), "Missing values after merging with prism data"
     assert len(mdat) == len(mdat.drop_duplicates()), "Duplicate values after merging with prism data"
@@ -140,9 +124,6 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     # Merge the NLCD lookup data with main data on the 'lat_lon' field using a left join
     mdat = mdat.merge(ldat, on='lat_lon', how='left')
 
-    # Check for unique latitude and longitude by date after merging NLCD data
-    [check_unique_lat_lon_by_date(mdat, x) for x in mdat['year'].unique()]
-
     # Load NLCD land cover data for the years 2013, 2016, and 2019
     # and create a 'lat_lon' identifier for each dataset
     ldat_2013 = pd.read_csv(f"data/{basin_name}/processed/nlcd_2013_land_cover_l48_20210604.csv")
@@ -163,23 +144,17 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     # Model data for years up to and including 2013
     mdat1 = mdat[mdat['year'] <= 2013]
 
-    [check_unique_lat_lon_by_date(mdat1, x) for x in mdat1['year'].unique()]  # Check for unique lat-lon by date
-
     mdat1 = mdat1.drop(columns=['lat', 'lon']).merge(ldat_2013, left_on='nlcd_grid', right_on='lat_lon', how='left')
     mdat1 = mdat1.rename(columns={'lat_lon_x': 'lat_lon'}).drop(columns=['lat_lon_y'])
 
     # Model data for years 2016 and 2017
     mdat2 = mdat[(mdat['year'] == 2016) | (mdat['year'] == 2017)]
 
-    [check_unique_lat_lon_by_date(mdat2, x) for x in mdat2['year'].unique()]  # Check for unique lat-lon by date
-
     mdat2 = mdat2.drop(columns=['lat', 'lon']).merge(ldat_2016, left_on='nlcd_grid', right_on='lat_lon', how='left')
     mdat2 = mdat2.rename(columns={'lat_lon_x': 'lat_lon'}).drop(columns=['lat_lon_y'])
 
     # Model data for years 2018 to 2022
     mdat3 = mdat[mdat['year'] >= 2018]
-
-    [check_unique_lat_lon_by_date(mdat3, x) for x in mdat3['year'].unique()]  # Check for unique lat-lon by date
 
     mdat3 = mdat3.drop(columns=['lat', 'lon']).merge(ldat_2019, left_on='nlcd_grid', right_on='lat_lon', how='left')
     mdat3 = mdat3.rename(columns={'lat_lon_x': 'lat_lon'}).drop(columns=['lat_lon_y'])
@@ -189,9 +164,6 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
 
     # Create a new feature by multiplying latitude and longitude
     mdat_nlcd['lat_x_lon'] = mdat_nlcd['lat'] * mdat_nlcd['lon']
-
-    # Check for unique latitude and longitude by date on the concatenated data
-    [check_unique_lat_lon_by_date(mdat_nlcd, x) for x in mdat_nlcd['year'].unique()]
 
     # Filter the data for years up to and including 2021
     save_dat = mdat_nlcd[mdat_nlcd['year'] <= max_year]
@@ -212,35 +184,15 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     print(f"Saved: data/{basin_name}/processed/model_data_elevation_prism_sinceSep_nlcd.parquet")
 
 
-def setup_basin(basin_name):
-
-    # Clean up directories
-    # Remove old prism data
-    os.system("rm -rfv data/prism_output/")
-
-    # create directories
-    os.system(f"mkdir data/{basin_name}")
-    os.system(f"mkdir data/{basin_name}/shapefiles")
-    os.system(f"mkdir data/{basin_name}/elevation")
-    os.system(f"mkdir data/{basin_name}/elev_grade_aspect")
-    os.system(f"mkdir data/{basin_name}/NDVI")
-    os.system(f"mkdir data/{basin_name}/processed")
-    os.system(f"mkdir data/{basin_name}/models")
-    os.system(f"mkdir data/{basin_name}/predictions")
-    os.system(f"mkdir data/prism_output/")
-    os.system(f"mkdir data/prism_output/daily")
-    os.system(f"mkdir data/{basin_name}/NLCD/")
-    os.system(f"mkdir data/{basin_name}/NLCD/processed/")
-
 
 
 basin_name = "Tuolumne_Watershed"
 min_year = 1981
-max_year = 2023
+max_year = 2021  # Needs to be 2021
 
 basin_name = "Blue_Dillon_Watershed"
 min_year = 1981
-max_year = 2023
+max_year = 2022
 
 basin_name = "Dolores_Watershed"
 min_year = 1981

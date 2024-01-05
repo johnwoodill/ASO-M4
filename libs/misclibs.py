@@ -1,3 +1,7 @@
+import pandas as pd
+import os
+from math import sin, cos, asin
+
 
 #%%
 def haversine(lon1, lat1, lon2, lat2):
@@ -143,3 +147,25 @@ def find_closest_grid(lat, lon, dat, return_column, decimal=0.1):
             closest_value = dat.at[idx, return_column]
 
     return closest_value
+
+
+
+def setup_basin(basin_name):
+
+    # Clean up directories
+    # Remove old prism data
+    os.system("rm -rfv data/prism_output/")
+
+    # create directories
+    os.system(f"mkdir data/{basin_name}")
+    os.system(f"mkdir data/{basin_name}/shapefiles")
+    os.system(f"mkdir data/{basin_name}/elevation")
+    os.system(f"mkdir data/{basin_name}/elev_grade_aspect")
+    os.system(f"mkdir data/{basin_name}/NDVI")
+    os.system(f"mkdir data/{basin_name}/processed")
+    os.system(f"mkdir data/{basin_name}/models")
+    os.system(f"mkdir data/{basin_name}/predictions")
+    os.system(f"mkdir data/prism_output/")
+    os.system(f"mkdir data/prism_output/daily")
+    os.system(f"mkdir data/{basin_name}/NLCD/")
+    os.system(f"mkdir data/{basin_name}/NLCD/processed/")
