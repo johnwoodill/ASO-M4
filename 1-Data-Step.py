@@ -29,7 +29,7 @@ from libs.asolibs import *
 from libs.prismlibs import *
 from libs.elevgradeaspectlibs import *
 from libs.nlcdlibs import *
-from misclibs import *
+from libs.misclibs import *
 
 tqdm.pandas()
 

@@ -127,12 +127,6 @@ def find_closest_grid_elev_grade_aspect_parallel(row):
     return find_closest_grid(row['lat'], row['lon'], edat, 'index', decimal=0.01)
 
 
-lat = 37.7396
-lon = -119.2703
-dat = ndat
-return_column = "lat_lon"
-decimal=0.001
-
 def find_closest_grid(lat, lon, dat, return_column, decimal=0.1):
     min_distance = np.inf
     closest_value = None
