@@ -4,6 +4,10 @@ import geopandas as gpd
 import xarray as xr
 import rioxarray
 import numpy as np
+import rioxarray as rxr
+import multiprocessing
+from tqdm import tqdm
+from math import radians, cos, sin, asin, sqrt
 
 from sentinelhub import SentinelHubRequest, DataCollection, MimeType, CRS, BBox
 
@@ -13,14 +17,6 @@ from requests_oauthlib import OAuth2Session
 import math
 import os
 
-import pandas as pd
-import geopandas as gpd
-import rioxarray as rxr
-import xarray as xr
-import numpy as np
-import multiprocessing
-from tqdm import tqdm
-from math import radians, cos, sin, asin, sqrt
 
 tqdm.pandas()
 

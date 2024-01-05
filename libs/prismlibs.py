@@ -20,6 +20,58 @@ import geopandas as gpd
 
 
 
+#%%
+def haversine(lon1, lat1, lon2, lat2):
+    """
+    Calculate haversine distance between two points
+    
+    Args:
+        lon1: longitude point 1
+        lat1: latitude point 1
+        lon2: lonitude point 2
+        lat2: latitude point 2
+    
+    Returns:
+        Calculate the great circle distance between two points 
+        on the earth (specified in decimal degrees)
+    """
+    # convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    
+    # haversine formula 
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a)) 
+    km = 6367 * c
+    return km
+
+
+
+def find_closest_grid_prism_parallel(row):
+    return find_closest_grid(row['lat'], row['lon'], pdat, 'gridNumber')
+
+
+
+def find_closest_grid(lat, lon, dat, return_column, decimal=0.1):
+    min_distance = np.inf
+    closest_value = None
+
+    dat = dat[(dat['lat'] >= lat - decimal) & (dat['lat'] <= lat + decimal)]
+    dat = dat[(dat['lon'] >= lon - decimal) & (dat['lon'] <= lon + decimal)]
+
+    for idx in dat.index:
+        lat_p, lon_p = dat.at[idx, 'lat'], dat.at[idx, 'lon']
+        distance = haversine(lat, lon, lat_p, lon_p)
+
+        if distance < min_distance:
+            min_distance = distance
+            closest_value = dat.at[idx, return_column]
+
+    return closest_value
+
+
+
 # Get PRISM data
 def proc_PRISMbil(ThisCol, ThisRow, bil_path):
     """
