@@ -57,7 +57,7 @@ def proc_nlcd(gdf, shape_loc, basin_name):
                    "nlcd_2013_land_cover_l48_20210604.img"]
 
 
-    [get_nlcd(x, shape_loc) for x in nlcd_files]
+    [get_nlcd(x, shape_loc, basin_name) for x in nlcd_files]
 
     ldat = pd.read_csv(f"data/{basin_name}/processed/aso_basin_data.csv")
     ldat = ldat.drop_duplicates(subset='lat_lon')
@@ -86,3 +86,4 @@ def proc_nlcd(gdf, shape_loc, basin_name):
     ldat['nlcd_grid'] = results
     len(ldat.dropna()) == len(ldat)
     ldat.to_csv(f"data/{basin_name}/processed/aso_nlcd_lookup.csv", index=False)
+
