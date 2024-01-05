@@ -118,9 +118,9 @@ def proc_ASO_SD():
 def proc_ASO_SWE_shp(gdf):
     files = glob.glob("data/ASO/SWE/*.tif")
 
+    file_list = []
     outlist = []
     for file_ in files:
-        print(f"Processing: {file_}")
         ds = rioxarray.open_rasterio(file_)
         ds = ds.rio.reproject("EPSG:4326")
 
@@ -128,10 +128,15 @@ def proc_ASO_SWE_shp(gdf):
         ds.attrs['_FillValue'] = np.nan
         ds = ds.where(ds != -9999.0, np.nan)
 
+        test = gdal.Open(file_)
+
         try: 
             dat = ds.rio.clip(gdf.geometry, all_touched=True, drop=True, invert=False, from_disk=True) 
             dat = dat.to_series().reset_index()
             dat.columns = ['band', 'y', 'x', 'SWE']
+
+            print(f"Data found: {file_}")
+            file_list.append(file_)
 
             if "ASO_Tuolumne" in file_:
                 # Get date
@@ -154,7 +159,7 @@ def proc_ASO_SWE_shp(gdf):
             elif "Blue" in file_ or "TenMileCk" in file_:
                 print(file_)
                 date = file_.split("_")[-3]
-                date = date[0:10]
+                date = date[0:10].replace("-", "")
                 
                 if len(date) == 9:
                     date_object = datetime.datetime.strptime(date, "%Y%b%d")
@@ -172,6 +177,8 @@ def proc_ASO_SWE_shp(gdf):
                 # Get site
                 site = file_.split("/")[-1].split("_")[-2]
 
+            print(date)
+
             dat = dat[['x', 'y', 'SWE']]
             dat.columns = ['lon', 'lat', 'SWE']
 
@@ -183,10 +190,22 @@ def proc_ASO_SWE_shp(gdf):
         except Exception as e:
             print(e)
 
+    print(f"*** {len(file_list)} Files processed ***")
+    print("-----------------------")
+    for i in file_list:
+        print(i)
+
     outdat = pd.concat(outlist)
     outdat['date'].unique()
+    outdat.groupby(['date', 'site']).count().reset_index()
+    len(outdat.groupby(['date', 'site']).count().reset_index())
+    len(outdat['date'].unique())
 
     return outdat
+
+
+
+
 
 
 

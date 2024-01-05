@@ -13,6 +13,19 @@ from requests_oauthlib import OAuth2Session
 import math
 import os
 
+import pandas as pd
+import geopandas as gpd
+import rioxarray as rxr
+import xarray as xr
+import numpy as np
+import multiprocessing
+from tqdm import tqdm
+from math import radians, cos, sin, asin, sqrt
+
+tqdm.pandas()
+
+
+
 from sentinelhub import (
     SHConfig,
     CRS,
@@ -43,6 +56,58 @@ token = oauth.fetch_token(token_url='https://services.sentinel-hub.com/auth/real
 # All requests using this session will have an access token automatically added
 resp = oauth.get("https://services.sentinel-hub.com/configuration/v1/wms/instances")
 print(resp.content)
+
+
+
+def haversine(lon1, lat1, lon2, lat2):
+    """
+    Calculate haversine distance between two points
+    
+    Args:
+        lon1: longitude point 1
+        lat1: latitude point 1
+        lon2: lonitude point 2
+        lat2: latitude point 2
+    
+    Returns:
+        Calculate the great circle distance between two points 
+        on the earth (specified in decimal degrees)
+    """
+    # convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    
+    # haversine formula 
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a)) 
+    km = 6367 * c
+    return km
+
+
+def find_closest_grid_elev_grade_aspect_parallel(row):
+    return find_closest_grid(row['lat'], row['lon'], edat, 'index', decimal=0.01)
+
+
+def find_closest_grid(lat, lon, dat, return_column, decimal=0.1):
+    min_distance = np.inf
+    closest_value = None
+
+    dat = dat[(dat['lat'] >= lat - decimal) & (dat['lat'] <= lat + decimal)]
+    dat = dat[(dat['lon'] >= lon - decimal) & (dat['lon'] <= lon + decimal)]
+
+    for idx in dat.index:
+        lat_p, lon_p = dat.at[idx, 'lat'], dat.at[idx, 'lon']
+        distance = haversine(lat, lon, lat_p, lon_p)
+
+        if distance < min_distance:
+            min_distance = distance
+            closest_value = dat.at[idx, return_column]
+
+    return closest_value
+
+
+
 
 
 def proc_grade_elev_watershed(basin_name, fp):
