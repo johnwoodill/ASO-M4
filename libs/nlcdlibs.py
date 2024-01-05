@@ -5,7 +5,7 @@ import xarray as xr
 import numpy as np
 import multiprocessing
 from tqdm import tqdm
-from math import radians, cos, sin
+from math import radians, cos, sin, asin
 
 tqdm.pandas()
 
