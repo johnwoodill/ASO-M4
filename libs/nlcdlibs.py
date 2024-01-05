@@ -4,6 +4,7 @@ import rioxarray as rxr
 import xarray as xr
 import numpy as np
 import multiprocessing
+from tqdm import tqdm
 
 tqdm.pandas()
 
