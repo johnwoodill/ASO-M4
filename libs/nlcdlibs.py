@@ -78,12 +78,12 @@ def get_nlcd(filename, shape_loc, basin_name):
 def proc_nlcd(gdf, shape_loc, basin_name):
     # ----------------------------------
     # Land cover
-    nlcd_files  = ["nlcd_2019_land_cover_l48_20210604.img",
-                   "nlcd_2016_land_cover_l48_20210604.img",
-                   "nlcd_2013_land_cover_l48_20210604.img"]
+    # nlcd_files  = ["nlcd_2019_land_cover_l48_20210604.img",
+    #                "nlcd_2016_land_cover_l48_20210604.img",
+    #                "nlcd_2013_land_cover_l48_20210604.img"]
 
 
-    [get_nlcd(x, shape_loc, basin_name) for x in nlcd_files]
+    # [get_nlcd(x, shape_loc, basin_name) for x in nlcd_files]
 
     ldat = pd.read_csv(f"data/{basin_name}/processed/aso_basin_data.csv")
     ldat = ldat.drop_duplicates(subset='lat_lon')
