@@ -20,33 +20,6 @@ import geopandas as gpd
 
 
 
-#%%
-def haversine(lon1, lat1, lon2, lat2):
-    """
-    Calculate haversine distance between two points
-    
-    Args:
-        lon1: longitude point 1
-        lat1: latitude point 1
-        lon2: lonitude point 2
-        lat2: latitude point 2
-    
-    Returns:
-        Calculate the great circle distance between two points 
-        on the earth (specified in decimal degrees)
-    """
-    # convert decimal degrees to radians 
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    
-    # haversine formula 
-    dlon = lon2 - lon1 
-    dlat = lat2 - lat1 
-    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * asin(sqrt(a)) 
-    km = 6367 * c
-    return km
-
-
 # Get PRISM data
 def proc_PRISMbil(ThisCol, ThisRow, bil_path):
     """
@@ -226,6 +199,53 @@ def proc_daily(gdf, location, min_year=1981, max_year=2023):
     # Concat and save
     outdat = pd.concat(df_list)
     outdat.to_csv(f"data/{location}/processed/{location}_PRISM_daily_{min_year}-{max_year}.csv", index=False)
+
+
+
+def proc_basin_prism(gdf, basin_name, min_year, max_year):
+
+    # Generate prism data between years
+    proc_daily(gdf, basin_name, min_year, max_year)
+
+    # pdat = pd.read_csv(f"data/{basin_name}/processed/{basin_name}_PRISM_daily_{min_year}-{max_year}.csv")
+    # pdat = pdat.drop_duplicates(subset=['gridNumber'])
+    # pdat = pdat[['longitude', 'latitude', 'gridNumber']]
+    # pdat.columns = ['lon', 'lat', 'gridNumber']
+
+    # gdf = gpd.read_file(shape_loc)
+    # gdf = gdf.to_crs(epsg=4326)
+
+    # ldat = pd.read_csv(f"data/{basin_name}/processed/aso_basin_data.csv")
+    # ldat = ldat[['lon', 'lat']].reset_index(drop=True)
+    # ldat = ldat.assign(lat_lon = ldat['lat'].astype(str) + "_" + ldat['lon'].astype(str))
+
+
+def proc_prism_lookup(basin_name, shape_loc):
+
+    prism_loc = glob.glob(f"data/{basin_name}/processed/*PRISM*")
+    pdat = pd.read_csv(prism_loc[0])
+    pdat = pdat.drop_duplicates(subset=['gridNumber'])
+    pdat = pdat[['longitude', 'latitude', 'gridNumber']]
+    pdat.columns = ['lon', 'lat', 'gridNumber']
+
+    gdf = gpd.read_file(shape_loc)
+    gdf = gdf.to_crs(epsg=4326)
+
+    ldat = pd.read_csv(f"data/{basin_name}/processed/aso_basin_data.csv")
+    ldat = ldat[['lon', 'lat']].reset_index(drop=True)
+
+    ldat = ldat.assign(lat = np.round(ldat['lat'], 4),
+                             lon = np.round(ldat['lon'], 4))
+
+    ldat = ldat.assign(lat_lon = ldat['lat'].astype(str) + "_" + ldat['lon'].astype(str))
+    ldat = ldat.drop_duplicates(subset='lat_lon')
+
+    # Use apply to find the closest grid for all rows
+    ldat['prism_grid'] = ldat.progress_apply(lambda row: find_closest_grid(row['lat'], row['lon'], pdat, 'gridNumber'), axis=1)
+    ldat.to_csv(f"data/{basin_name}/processed/aso_prism_lookup.csv", index=False)
+
+
+
 
 
 if __name__ == "__main__":

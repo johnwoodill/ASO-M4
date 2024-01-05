@@ -190,6 +190,26 @@ def proc_ASO_SWE_shp(gdf):
 
 
 
+def proc_aso_swe(gdf, basin_name, decimal_point=4):
+
+    aso = proc_ASO_SWE_shp(gdf)
+    aso = aso.dropna()
+    aso = aso[aso['SWE'] >= 0]
+
+    print("Defining grids")
+    outdat = aso.assign(lat = np.round(aso['lat'], decimal_point),
+        lon = np.round(aso['lon'], decimal_point))
+
+    # outdat['lat_lon'] = outdat['lat'].astype(str) + "_" + outdat['lon'].astype(str)
+    
+    outdat['lat_lon'] = outdat['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + outdat['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
+
+    print("Grouping by and getting averages")
+    outdat = outdat.groupby(['date', 'site', 'lat_lon']).agg({'SWE': np.mean, 'lat': np.mean, 'lon': np.mean}).reset_index()
+
+    outdat.to_csv(f"data/{basin_name}/processed/aso_basin_data.csv", index=False)
+
+
 
 
 if __name__ == "__main__":

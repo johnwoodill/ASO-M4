@@ -38,8 +38,7 @@ my_lr_scheduler = LearningRateScheduler(adapt_learning_rate)
 def checkboard_cv_model(watershed):
 
     mdat = pd.read_parquet(f"data/{watershed}/processed/model_data_elevation_prism_sinceSep_nlcd.parquet")
-    mdat = pd.read_parquet(f"data/{watershed}/model_data_elevation_prism_sinceSep_nlcd_V2.parquet")
-
+    
     mdat = mdat.assign(year = pd.to_datetime(mdat['date']).dt.strftime("%Y"),
         month = pd.to_datetime(mdat['date']).dt.strftime("%m"),
         doy = pd.to_datetime(mdat['date']).dt.strftime("%j"))
