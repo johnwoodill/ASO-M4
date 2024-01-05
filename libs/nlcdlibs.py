@@ -4,7 +4,7 @@ import rioxarray as rxr
 import xarray as xr
 
 
-def get_nlcd(filename, shape_loc):
+def get_nlcd(filename, shape_loc, basin_name):
 
     print(f"Processing: {filename}")
 
@@ -49,7 +49,7 @@ def get_nlcd(filename, shape_loc):
 
 
 
-def proc_nlcd(gdf, shape_loc):
+def proc_nlcd(gdf, shape_loc, basin_name):
     # ----------------------------------
     # Land cover
     nlcd_files  = ["nlcd_2019_land_cover_l48_20210604.img",

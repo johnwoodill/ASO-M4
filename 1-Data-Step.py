@@ -234,10 +234,6 @@ def setup_basin(basin_name):
 
 
 
-
-
-
-
 basin_name = "Tuolumne_Watershed"
 min_year = 1981
 max_year = 2023
@@ -296,7 +292,7 @@ def main(basin_name, min_year, max_year):
 
     proc_prism_lookup(basin_name, shape_loc)
 
-    proc_nlcd(gdf, shape_loc)
+    proc_nlcd(gdf, shape_loc, basin_name)
 
     bind_data(basin_name, shape_loc, min_year=min_year, max_year=max_year)
 
