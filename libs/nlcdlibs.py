@@ -5,6 +5,7 @@ import xarray as xr
 import numpy as np
 import multiprocessing
 
+tqdm.pandas()
 
 
 def find_closest_grid_nlcd_parallel(row):
