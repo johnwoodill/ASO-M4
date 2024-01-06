@@ -31,17 +31,23 @@ es = EarlyStopping(monitor='val_loss', patience=3, verbose=0,
 my_lr_scheduler = LearningRateScheduler(adapt_learning_rate)
 
 
-# -----------------------------------
-# Build model data
-# Checkerboard CV
-
 def checkboard_cv_model(watershed):
 
     mdat = pd.read_parquet(f"data/{watershed}/processed/model_data_elevation_prism_sinceSep_nlcd.parquet")
     
-    mdat = mdat.assign(year = pd.to_datetime(mdat['date']).dt.strftime("%Y"),
-        month = pd.to_datetime(mdat['date']).dt.strftime("%m"),
-        doy = pd.to_datetime(mdat['date']).dt.strftime("%j"))
+    # mdat = mdat.assign(year = pd.to_datetime(mdat['date']).dt.strftime("%Y"),
+    #     month = pd.to_datetime(mdat['date']).dt.strftime("%m"),
+    #     doy = pd.to_datetime(mdat['date']).dt.strftime("%j"))
+
+    # Convert the 'date' column to datetime just once
+    mdat['date'] = pd.to_datetime(mdat['date'])
+
+    # Extract the year, month, and day of the year directly from the datetime object
+    mdat = mdat.assign(
+        year=mdat['date'].dt.year.astype(str),
+        month=mdat['date'].dt.month.astype(str).str.zfill(2),
+        doy=mdat['date'].dt.dayofyear.astype(str).str.zfill(3)
+    )
 
     # mdat = mdat[mdat['year'].isin(["2021", "2022", "2023"])].reset_index(drop=True)
 
@@ -236,5 +242,21 @@ if __name__ == "__main__":
     watershed = "Conejos_Watershed"
 
     checkboard_cv_model(watershed)    
-
     train_full_model(watershed)
+
+    [checkboard_cv_model(x) for x in ['Tuolumne_Watershed', 
+                                   'Blue_Dillon_Watershed', 
+                                   'Dolores_Watershed', 
+                                   'Conejos_Watershed']]
+
+
+    [train_full_model(x) for x in ['Tuolumne_Watershed', 
+                                   'Blue_Dillon_Watershed', 
+                                   'Dolores_Watershed', 
+                                   'Conejos_Watershed']]
+
+
+
+
+
+

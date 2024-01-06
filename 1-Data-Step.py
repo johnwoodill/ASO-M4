@@ -31,20 +31,7 @@ from libs.elevgradeaspectlibs import *
 from libs.nlcdlibs import *
 from libs.misclibs import *
 
-
 tqdm.pandas()
-
-
-
-basin_name = "Tuolumne_Watershed"
-min_year = 1981
-max_year = 2021  # Needs to be 2021
-    
-shape_loc = glob.glob(f"data/{basin_name}/shapefiles/*.shp")[0]
-
-gdf = gpd.read_file(shape_loc)
-gdf = gdf.to_crs(epsg=4326)
-
 
 
 def bind_data(basin_name, shape_loc, min_year, max_year):
@@ -197,43 +184,6 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
     print(f"Saved: data/{basin_name}/processed/model_data_elevation_prism_sinceSep_nlcd.parquet")
 
 
-
-
-basin_name = "Tuolumne_Watershed"
-min_year = 1981
-max_year = 2021  # Needs to be 2021
-
-basin_name = "Blue_Dillon_Watershed"
-min_year = 1981
-max_year = 2022
-
-basin_name = "Dolores_Watershed"
-min_year = 1981
-max_year = 2022
-
-
-basin_name = "Conejos_Watershed"
-min_year = 1981
-max_year = 2022
-
-# # Tuolumne Basin shapefile
-# fp = gpd.read_file('data/Tuolumne_Watershed/shapefiles/Tuolumne_Watershed.shp')
-# proc_grade_elev_watershed("Tuolumne_Watershed", fp)
-
-# fp = gpd.read_file('data/Blue_Dillon_Watershed/shapefiles/Blue_Dillon.shp')
-# proc_grade_elev_watershed("Blue_Dillon_Watershed", fp)
-
-# fp = gpd.read_file('data/Conejos_Watershed/shapefiles/Conejos_waterbasin.shp')
-# proc_grade_elev_watershed("Conejos_Watershed", fp)
-
-# fp = gpd.read_file('data/Dolores_Watershed/shapefiles/Dolores_waterbasin.shp')
-# proc_grade_elev_watershed("Dolores_Watershed", fp)
-
-
-
-
-
-
 def main(basin_name, min_year, max_year):
     
     shape_loc = glob.glob(f"data/{basin_name}/shapefiles/*.shp")[0]
@@ -250,9 +200,6 @@ def main(basin_name, min_year, max_year):
 
     proc_elev_grade_aspect_lookup(basin_name, shape_loc)
 
-    #### NOT IN USE
-    # proc_elevation(gdf, basin_name)
-
     proc_basin_prism(gdf, basin_name, min_year, max_year)
 
     proc_prism_lookup(basin_name, shape_loc)
@@ -268,38 +215,19 @@ if __name__ == "__main__":
 
     fire.Fire(main)
 
-    # basin_name = "Blue_Dillon_Watershed"
-    # shape_loc = glob.glob(f"data/{basin_name}/shapefiles/*.shp")[0]
-    
-    # min_year = 1981
-    # max_year = 2021
+    basin_name = "Tuolumne_Watershed"
+    min_year = 1981
+    max_year = 2021  # Needs to be 2021
 
-    # gdf = gpd.read_file(shape_loc)
-    # gdf = gdf.to_crs(epsg=4326)
+    basin_name = "Blue_Dillon_Watershed"
+    min_year = 1981
+    max_year = 2022
 
-    # setup_basin(basin_name)
-
-    # proc_aso_swe(gdf, basin_name, decimal_point)
-
-    # proc_elevation(gdf, basin_name)
-
-    # fp = gpd.read_file('data/Tuolumne_Watershed/shapefiles/Tuolumne_Watershed.shp')
-    # proc_grade_elev_watershed("Tuolumne_Watershed", fp)
-
-    # fp = gpd.read_file('data/Blue_Dillon_Watershed/shapefiles/Blue_Dillon.shp')
-    # proc_grade_elev_watershed("Blue_Dillon_Watershed", fp)
-    
-    # fp = gpd.read_file('data/Conejos_Watershed/shapefiles/Conejos_waterbasin.shp')
-    # proc_grade_elev_watershed("Conejos_Watershed", fp)
-    
-    # fp = gpd.read_file('data/Dolores_Watershed/shapefiles/Dolores_waterbasin.shp')
-    # proc_grade_elev_watershed("Dolores_Watershed", fp)
+    basin_name = "Dolores_Watershed"
+    min_year = 1981
+    max_year = 2022
 
 
-    # proc_basin_prism(gdf, basin_name, min_year, max_year)
-
-    # proc_prism_lookup(basin_name, shape_loc)
-
-    # proc_nlcd(gdf, shape_loc)
-
-    # bind_data(basin_name, shape_loc, min_year=1981, max_year=2023)
+    basin_name = "Conejos_Watershed"
+    min_year = 1981
+    max_year = 2022

@@ -8,14 +8,11 @@ import time
 import multiprocessing
 from datetime import datetime, timedelta
 
-import pandas as pd
-import numpy as np
 import geopandas as gpd
 import rasterio
 import xarray as xr
 import rioxarray as rxr
 from shapely.geometry import Point
-# from bs4 import BeautifulSoup
 
 import dask.dataframe as dd
 from dask import delayed
@@ -24,8 +21,6 @@ from dask.diagnostics import ProgressBar
 from concurrent.futures import ThreadPoolExecutor
 
 from tqdm import tqdm
-
-# import ee
 
 from haversine import haversine
 from keras.models import load_model
@@ -131,27 +126,37 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     aso_dat['year'].unique()
 
     # Get elevation data
-    aso_elev = pd.read_parquet(f"data/{watershed}/processed/aso_elevation.parquet")
-    aso_elev.columns = ['lat', 'lon', 'elevation']
+    aso_elev = pd.read_csv(f"data/{watershed}/processed/aso_elev_grade_aspect.csv")
+    aso_elev.columns = ['lat', 'lon', 'lat_lon', 'elevation', 'slope', 'aspect']
+    # aso_elev = pd.read_parquet(f"data/{watershed}/processed/aso_elevation.parquet")
+    # aso_elev.columns = ['lat', 'lon', 'elevation']
 
-    aso_elev = aso_elev.assign(lat = np.round(aso_elev['lat'], 4),
-                             lon = np.round(aso_elev['lon'], 4))
+    # aso_elev = aso_elev.assign(lat = np.round(aso_elev['lat'], 4),
+    #                          lon = np.round(aso_elev['lon'], 4))
 
-    aso_elev['lat_lon'] = aso_elev['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_elev['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
+    # aso_elev['lat_lon'] = aso_elev['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_elev['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
 
     # aso_elev = aso_elev.assign(lat_lon = aso_elev['lat'].astype(str) + "_" + aso_elev['lon'].astype(str))
-    aso_elev = aso_elev[['lat_lon', 'elevation']]
-    aso_elev = aso_elev.drop_duplicates(subset=['lat_lon'])
+    aso_elev = aso_elev[['lat_lon', 'elevation', 'slope', 'aspect']]
+    # aso_elev = aso_elev.drop_duplicates(subset=['lat_lon'])
 
     # Prism data
     prism_filename = glob.glob(f"data/{watershed}/processed/*PRISM*")
     prism_dat = pd.read_csv(prism_filename[0])
-    prism_dat = prism_dat.assign(date = pd.to_datetime(prism_dat['date'], format = "%Y%m%d"))
-    prism_dat = prism_dat.assign(month = pd.to_datetime(prism_dat['date']).dt.strftime("%m"))
-    prism_dat = prism_dat.assign(year = pd.to_datetime(prism_dat['date']).dt.strftime("%Y"))
 
-    prism_dat = prism_dat.assign(month = prism_dat['month'].astype(int),
-                                 year = prism_dat['year'].astype(int))
+    # Convert the 'date' column to a datetime object just once
+    prism_dat['date'] = pd.to_datetime(prism_dat['date'], format="%Y%m%d")
+
+    # Extract the month and year using vectorized operations
+    prism_dat['month'] = prism_dat['date'].dt.month  # This will already be integer
+    prism_dat['year'] = prism_dat['date'].dt.year  
+
+    # prism_dat = prism_dat.assign(date = pd.to_datetime(prism_dat['date'], format = "%Y%m%d"))
+    # prism_dat = prism_dat.assign(month = pd.to_datetime(prism_dat['date']).dt.strftime("%m"))
+    # prism_dat = prism_dat.assign(year = pd.to_datetime(prism_dat['date']).dt.strftime("%Y"))
+
+    # prism_dat = prism_dat.assign(month = prism_dat['month'].astype(int),
+    #                              year = prism_dat['year'].astype(int))
 
     prism_dat = prism_dat.pivot_table(index=['date', 'gridNumber', 'month', 'year'],
                                 columns='var', aggfunc=np.nanmean,
@@ -193,8 +198,8 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     # Merge NLCD
     print("Processing NLCD")
     ldat = pd.read_csv(f"data/{watershed}/processed/aso_nlcd_lookup.csv")
-    ldat = ldat.assign(lat = np.round(ldat['lat'], 4),
-                       lon = np.round(ldat['lon'], 4))
+    # ldat = ldat.assign(lat = np.round(ldat['lat'], 4),
+    #                    lon = np.round(ldat['lon'], 4))
     
     ldat['lat_lon'] = ldat['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + ldat['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
 
@@ -283,7 +288,7 @@ def gen_predictions(proc_pred_dat):
     # Get common column names
     pred_dat = proc_pred_dat[['date', 'lat_lon', 'lat', 'lon', 
            'prism_grid', 'snow', 'tmean', 'tmax', 'tmin', 'ppt', 'gridNumber',
-           'aso_date', 'elevation', 'year', 'month',
+           'aso_date', 'elevation', 'slope', 'aspect', 'year', 'month',
            'nlcd_grid', 'landcover']]
 
     # Generate controls
@@ -359,57 +364,42 @@ if __name__ == "__main__":
 
     decimal_point = 4
 
-    pred_dates = generate_dates(1981, 2021, 4, 1)
-
-    shape_loc = "data/shapefiles/tuolumne_watershed/Tuolumne_Watershed.shp"
     watershed = "Tuolumne_Watershed"
+    shape_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
 
-    mdat_nlcd = proc_prediction(waterbasin, shape_loc, pred_dates)
+    pred_dates = generate_dates(1981, 2021, 4, 1)
+    
+    mdat_nlcd = proc_prediction(watershed, shape_loc, pred_dates)
 
     output = gen_predictions(mdat_nlcd)
 
     # ----------------------------------------------------------
 
-    pred_dates = generate_dates(1981, 2021, 4, 1)
-
-    shape_loc = "data/shapefiles/blue_dillon_watershed/Blue_Dillon.shp"
     watershed = "Blue_Dillon_Watershed"
+    shape_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
 
-    mdat_nlcd = proc_prediction(waterbasin, shape_loc, pred_dates)
+    pred_dates = generate_dates(1981, 2022, 4, 1)
+    
+    mdat_nlcd = proc_prediction(watershed, shape_loc, pred_dates)
 
     output = gen_predictions(mdat_nlcd)
 
     # ----------------------------------------------------------
 
     watershed = "Dolores_Watershed"
-
-    min_year = 1981
-    max_year = 2022
-
     shape_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
     
-    gdf = gpd.read_file(shape_loc)
-    gdf = gdf.to_crs(epsg=4326)
-
-    pred_dates = generate_dates(1981, 2021, 4, 1)
+    pred_dates = generate_dates(1981, 2022, 4, 1)
 
     mdat_nlcd = proc_prediction(watershed, shape_loc, pred_dates)
 
     output = gen_predictions(mdat_nlcd)
 
-
-
     # ----------------------------------------------------------
-
-    min_year = 1981
-    max_year = 2022
 
     watershed = "Conejos_Watershed"
     shape_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
     
-    gdf = gpd.read_file(shape_loc)
-    gdf = gdf.to_crs(epsg=4326)
-
     pred_dates = generate_dates(1981, 2022, 4, 1)
 
     mdat_nlcd = proc_prediction(watershed, shape_loc, pred_dates)
