@@ -17,6 +17,8 @@ waterbasin = "Conejos_Watershed"
 shapefile_loc = "data/Conejos_Watershed/shapefiles/Conejos_waterbasin.shp"
 
 adat = read_csv(paste0("~/Projects/ASO-M4/data/", waterbasin, "/processed/aso_basin_data.csv"))
+edat = read_csv(paste0("~/Projects/ASO-M4/data/", waterbasin, "/processed/aso_elev_grade_aspect.csv"))
+mdat = read_parquet(paste0("~/Projects/ASO-M4/data/", waterbasin, "/processed/model_data_elevation_prism_sinceSep_nlcd.parquet"))
 
 sdat = read_sf(paste0(shapefile_loc))
 sdat = st_transform(sdat, "EPSG:4326")
@@ -38,6 +40,61 @@ ggplot(filter(adat, date == date_), aes(lon, lat, color=SWE)) +
     axis.text.y = element_blank(),
     axis.ticks = element_blank()) +
   NULL
+
+
+
+# Elevation
+ggplot(edat, aes(lon, lat, color=elev_m)) + 
+  theme_minimal(15) +
+  scale_fill_viridis_c() +
+  # geom_sf(data=sdat, fill=NA, inherit.aes = FALSE) +
+  # geom_tile() +
+  geom_point() +
+  labs(x=NULL, y=NULL) +
+  theme(plot.title = element_text(hjust = 0.5),
+    panel.border = element_rect(colour = "black", fill=NA, size=1), 
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()) +
+  NULL
+
+
+# Aspect
+ggplot(edat, aes(lon, lat, color=aspect)) + 
+  theme_minimal(15) +
+  scale_fill_viridis_c() +
+  # geom_sf(data=sdat, fill=NA, inherit.aes = FALSE) +
+  # geom_tile() +
+  geom_point() +
+  labs(x=NULL, y=NULL) +
+  theme(plot.title = element_text(hjust = 0.5),
+    panel.border = element_rect(colour = "black", fill=NA, size=1), 
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()) +
+  NULL
+
+
+
+# Grade
+ggplot(edat, aes(lon, lat, color=grade)) + 
+  theme_minimal(15) +
+  scale_fill_viridis_c() +
+  # geom_sf(data=sdat, fill=NA, inherit.aes = FALSE) +
+  # geom_tile() +
+  geom_point() +
+  labs(x=NULL, y=NULL) +
+  theme(plot.title = element_text(hjust = 0.5),
+    panel.border = element_rect(colour = "black", fill=NA, size=1), 
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()) +
+  NULL
+
+
 
 
 prdat = read_csv(paste0("~/Projects/ASO-M4/data/", waterbasin, "/processed/", waterbasin, "_PRISM_daily_1981-2023.csv"))
@@ -136,6 +193,37 @@ ggplot(trdat1, aes(lon, lat, fill=count_neg)) +
                              barwidth = 20,
                              barheight = 1)) +
   NULL
+
+
+# Model data check
+
+date_ = sample(mdat$date, 1)
+# "date"       "lat_lon"    "SWE"        "lat"        "lon"        "prism_grid" "snow"       "tmean"     
+# "tmax"       "tmin"       "ppt"        "gridNumber" "aso_date"   "elevation"  "slope"      "aspect"    
+# "year"       "month"      "lat_x_lon"  "nlcd_grid"  "landcover" 
+
+p1 = ggplot(mdat, aes(lon, lat, color=SWE)) + 
+  theme_minimal(15) +
+  scale_fill_viridis_c() +
+  # geom_sf(data=sdat, fill=NA, inherit.aes = FALSE) +
+  # geom_tile() +
+  geom_point() +
+  labs(x=NULL, y=NULL) +
+  theme(plot.title = element_text(hjust = 0.5),
+    panel.border = element_rect(colour = "black", fill=NA, linewidth=1), 
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()) +
+  facet_wrap(~date)
+  NULL
+
+  
+ggsave(plot=p1, filename="~/Projects/test1.png")
+
+#
+
+
 
 
 
