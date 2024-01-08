@@ -242,6 +242,7 @@ if __name__ == "__main__":
     watershed = "Conejos_Watershed"
 
     checkboard_cv_model(watershed)    
+
     train_full_model(watershed)
 
     [checkboard_cv_model(x) for x in ['Tuolumne_Watershed', 

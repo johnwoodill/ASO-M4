@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the Conda environment name
-CONDA_ENV_NAME=ASO-R
+CONDA_ENV_NAME=M4-R
 
 # Create a new Conda environment for R
 conda create -n $CONDA_ENV_NAME r-base
@@ -9,8 +9,10 @@ conda create -n $CONDA_ENV_NAME r-base
 # Activate the Conda environment
 conda activate $CONDA_ENV_NAME
 
-# Install required R packages using Rscript
-Rscript -e 'install.packages(c("akima", "forecast", "qrnn", "e1071", "randomForest", "monmlp", "genalg", "stringr", "doParallel", "foreach", "quantreg", "quantregGrowth", "matrixStats"), dependencies=TRUE)'
+conda install -c conda-forge r-akima r-forecast r-qrnn r-e1071 r-randomForest r-genalg r-stringr r-doParallel r-foreach r-quantreg r-quantregGrowth r-matrixStats
+
+Rscript -e 'install.packages("monmlp", dependencies=TRUE, repos="https://ftp.osuosl.org/pub/cran/")'
+
 
 # Deactivate the Conda environment
 conda deactivate

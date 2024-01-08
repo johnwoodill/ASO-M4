@@ -95,6 +95,7 @@ def generate_dates(start_year, end_year, month, day):
 
 
 def proc_prediction(waterbasin, shape_loc, pred_dates):
+    decimal_point = 4
     gdf = gpd.read_file(shape_loc)
     gdf = gdf.to_crs(epsg=4326)
     # gdf = gdf.set_crs("EPSG:4326")  # Replace EPSG:4326 with your CRS

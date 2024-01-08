@@ -6,15 +6,15 @@ import os
 import requests
 from io import StringIO
 import pandas as pd
+import glob
 
 import ulmo   # snotel data
 
 from libs.asolibs import *
 from libs.gagelibs import StreamGauge
-import glob
 
 
-def get_nrcs_snotel():
+def get_nrcs_Tuolumne_snotel():
     sno_file = f'data/NRCS_Snow_Station/TuolumneSWE_041981_042023.txt'
     sno_data = pd.read_csv(sno_file, comment="#")
 
@@ -33,7 +33,7 @@ def get_nrcs_snotel():
 
     # format date -> year
     nrdat = sno_data
-    nrdat = nrdat.assign(year = pd.to_datetime(nrdat['Date']).dt.year)
+    nrdat = nrdat.assign(year = pd.to_datetime(nrdat['Date'], format="%b %Y").dt.year)
 
     # filter for continuous time series & shorten column names
     nrdat = nrdat.drop(columns=incomplete_colms)
@@ -161,7 +161,7 @@ def get_flowrate(stationID, start_date, end_date):
 
         df = df[(df['month'] >= 4) & (df['month'] <= 7)]
 
-        df = df.groupby('year').agg({'kaf': np.sum}).reset_index()
+        df = df.groupby('year').agg({'kaf': sum}).reset_index()
 
         df['kaf'] = df['kaf']/1000
         
@@ -295,7 +295,7 @@ def merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10):
     print("Created elevation bins")
 
     # Aggregate ASO ASW data by year and elevation bin
-    adat = adat.groupby(['year', 'elevation_bin']).agg({'swe_pred': np.sum}).reset_index()
+    adat = adat.groupby(['year', 'elevation_bin']).agg({'swe_pred': sum}).reset_index()
     adat = adat.sort_values('year')
     adat = adat.pivot(index='year', columns='elevation_bin', values='swe_pred').add_prefix('elevbin_').reset_index()
     print("Aggregated and pivoted ASO ASW data")
@@ -323,37 +323,35 @@ def merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10):
     mdat.to_csv(f"~/Projects/M4/examples/{watershed}_baseline_aso_swe_temp_precip/model_data_aso_swe.txt", sep='\t', index=False)
     mdat.to_csv(f"~/Projects/M4/examples/{watershed}_baseline_aso_swe_temp_precip/MMPEInputData_ModelBuildingMode.txt", sep='\t', index=False)
     print("Merged and saved baseline, ASO SWE, temp, and precip data")
-
     print("merge_save function completed")
 
 
 
 if __name__ == "__main__":
 
-    # Hetchy flow data
-    # sdat = pd.read_csv("data/CDEC/hh_Q_Monthly.csv")
-    # sdat.columns = ['year-month', 'kaf']
-
-    # sdat['month'] = [int(x.split(" ")[1]) for x in sdat['year-month']]
-    # sdat['year'] = [int(x.split(" ")[0]) for x in sdat['year-month']]
-
-    # sdat = sdat[(sdat['month'] >= 4) & (sdat['month'] <= 7)]
-    # sdat = sdat.groupby('year').agg({'kaf': np.sum}).reset_index()
-
-    # sdat['kaf'] = sdat['kaf']/1000
-    # sdat
-
-
-
     # Setup directories for processing data for region
-    dir_name = "Tuolumne_Watershed"
     watershed = "Tuolumne_Watershed"
+    shapefile_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
+    
+    min_year = 1981
+    max_year = 2021
 
+    gdf = gpd.read_file(shapefile_loc)
+    gdf = gdf.to_crs(epsg=4326)
+    
+    setup_dirs(watershed)
+    
+    snotel_dat = get_nrcs_Tuolumne_snotel()
+    streamGage_dat = get_flowrate("11276500:CA:USGS", "1981-01-01", "2023-09-30")
+    prism_dat = get_prism(watershed, min_year, max_year)
+    merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10)
+
+
+    # ---------------------------------------------
+    # Blue Dillon
     min_year = 1981
     max_year = 2022
     
-    # ---------------------------------------------
-    # Blue Dillon
     watershed = "Blue_Dillon_Watershed"
     shapefile_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
 
@@ -368,19 +366,13 @@ if __name__ == "__main__":
     merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10)
 
 
-    path = glob.glob(f"data/{watershed}/predictions/*")[0]
-    len(pd.read_parquet(path))
-
-    len(pd.read_csv(f"data/{watershed}/processed/aso_basin_data.csv"))
-
     # ---------------------------------------------
     # Dolores
     watershed = "Dolores_Watershed"
-    min_year = 1987
+    min_year = 1981
     max_year = 2022
 
     shapefile_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
-
     gdf = gpd.read_file(shapefile_loc)
 
     setup_dirs(watershed)
@@ -393,13 +385,13 @@ if __name__ == "__main__":
     # ---------------------------------------------
     # Conejos
     watershed = "Conejos_Watershed"
-    shapefile_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
-
+    
     min_year = 1981
     max_year = 2022
 
+    shapefile_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
     gdf = gpd.read_file(shapefile_loc)
-    gdf = gdf.to_crs(epsg=4326)
+    # gdf = gdf.to_crs(epsg=4326)
 
     setup_dirs(watershed)
 
@@ -445,4 +437,9 @@ if __name__ == "__main__":
 
 
 
+Blue_Dillon_Watershed_aso_swe       
+Blue_Dillon_Watershed_aso_swe_total 
+Blue_Dillon_Watershed_baseline      
+Blue_Dillon_Watershed_baseline_aso_swe
+Blue_Dillon_Watershed_baseline_aso_swe_temp_precip
 
