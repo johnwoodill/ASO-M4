@@ -18,7 +18,7 @@
 
 # -----------------------------------------------------------------------------
 
-conda activate ASO-R
+conda activate M4-R
 
 # Check if two arguments are given (base directory and watershed name)
 if [ $# -ne 2 ]; then
