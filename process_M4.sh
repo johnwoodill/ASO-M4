@@ -7,6 +7,10 @@
 # Run the Script: Execute the script by typing 
 
 # ./process_M4.sh /path/to/your/base/directory WatershedName 
+# ./process_M4.sh ~/Projects/M4/examples/ Tuolumne_Watershed
+# ./process_M4.sh ~/Projects/M4/examples/ Blue_Dillon_Watershed
+# ./process_M4.sh ~/Projects/M4/examples/ Dolores_Watershed
+# ./process_M4.sh ~/Projects/M4/examples/ Conejos_Watershed
 
 # in your terminal. Replace /path/to/your/base/directory with the actual 
 # path where the directories are located and WatershedName with the actual 
@@ -14,6 +18,7 @@
 
 # -----------------------------------------------------------------------------
 
+conda activate ASO-R
 
 # Check if two arguments are given (base directory and watershed name)
 if [ $# -ne 2 ]; then
@@ -34,6 +39,7 @@ declare -a directories=(
 "${WATERSHED_NAME}_baseline"
 "${WATERSHED_NAME}_baseline_aso_swe"
 "${WATERSHED_NAME}_baseline_aso_swe_temp_precip"
+"${WATERSHED_NAME}_aso_temp_precip"
 )
 
 # Loop through each directory

@@ -257,6 +257,7 @@ def setup_dirs(watershed):
     os.system(f"mkdir ~/Projects/M4/examples/{watershed}_aso_swe_total/")
     os.system(f"mkdir ~/Projects/M4/examples/{watershed}_baseline_aso_swe/")
     os.system(f"mkdir ~/Projects/M4/examples/{watershed}_baseline_aso_swe_temp_precip/")
+    os.system(f"mkdir ~/Projects/M4/examples/{watershed}_aso_temp_precip/")
 
     # Copy skeleton directories
     os.system(f"cp -R ~/Projects/M4/examples/baseline/* ~/Projects/M4/examples/{watershed}_baseline/.")
@@ -264,6 +265,7 @@ def setup_dirs(watershed):
     os.system(f"cp -R ~/Projects/M4/examples/baseline/* ~/Projects/M4/examples/{watershed}_aso_swe_total/.")
     os.system(f"cp -R ~/Projects/M4/examples/baseline/* ~/Projects/M4/examples/{watershed}_baseline_aso_swe/.")
     os.system(f"cp -R ~/Projects/M4/examples/baseline/* ~/Projects/M4/examples/{watershed}_baseline_aso_swe_temp_precip/.")
+    os.system(f"cp -R ~/Projects/M4/examples/baseline/* ~/Projects/M4/examples/{watershed}_aso_temp_precip/.")
 
 
 def merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10):
@@ -323,6 +325,15 @@ def merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10):
     mdat.to_csv(f"~/Projects/M4/examples/{watershed}_baseline_aso_swe_temp_precip/model_data_aso_swe.txt", sep='\t', index=False)
     mdat.to_csv(f"~/Projects/M4/examples/{watershed}_baseline_aso_swe_temp_precip/MMPEInputData_ModelBuildingMode.txt", sep='\t', index=False)
     print("Merged and saved baseline, ASO SWE, temp, and precip data")
+    print("merge_save function completed")
+
+    # Merge for ASO SWE, and PRISM temperature and precipitation data
+    mdat = streamGage_dat.merge(prism_dat, on=['year'], how='left')
+    mdat = mdat.merge(adat, on=['year'], how='left')
+    mdat = mdat.dropna().reset_index(drop=True)
+    mdat.to_csv(f"~/Projects/M4/examples/{watershed}_aso_temp_precip/model_data_aso_swe.txt", sep='\t', index=False)
+    mdat.to_csv(f"~/Projects/M4/examples/{watershed}_aso_temp_precip/MMPEInputData_ModelBuildingMode.txt", sep='\t', index=False)
+    print("Merged and saved ASO temp, and precip data")
     print("merge_save function completed")
 
 
@@ -420,10 +431,10 @@ if __name__ == "__main__":
 
     # ------------------------------------------------
     # For conda environment reqs
-    # conda create --name M4 r=3.6
+    # conda create --name M4 r=3.6 r-base
     # conda activate M4
 
-    # sudo apt-get install libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev
+    # sudo apt-get install libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libnlopt libnlopt-dev
 
     # conda install -c conda-forge r-forecast r-qrnn r-e1071 r-akima r-genalg r-doParallel r-foreach 
     #                              r-quantreg r-quantregGrowth r-matrixStats r-randomForest r-nloptr

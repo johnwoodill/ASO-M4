@@ -163,9 +163,15 @@ def train_full_model(watershed):
 
     mdat = pd.read_parquet(f"data/{watershed}/processed/model_data_elevation_prism_sinceSep_nlcd.parquet")
 
-    mdat = mdat.assign(year = pd.to_datetime(mdat['date']).dt.strftime("%Y"),
-        month = pd.to_datetime(mdat['date']).dt.strftime("%m"),
-        doy = pd.to_datetime(mdat['date']).dt.strftime("%j"))
+    # Convert the 'date' column to datetime objects once
+    mdat['date'] = pd.to_datetime(mdat['date'])
+
+    # Extract year, month, and day of year
+    mdat = mdat.assign(
+        year=mdat['date'].dt.year.astype(str),
+        month=mdat['date'].dt.month.astype(str).str.zfill(2),
+        doy=mdat['date'].dt.dayofyear.astype(str).str.zfill(3)
+    )
 
     # --------------------------------------------------
     # Train full model for predictions
