@@ -1,4 +1,4 @@
-# ASO SWE & Environmental Data Integration for Streamflow Prediction
+# ASO SWE & Environmental Data Integration for M4 Streamflow Prediction
 
 ## Overview
 This repository offers a comprehensive framework for processing and analyzing snow water equivalent (SWE) data from Airborne Snow Observatories (ASO). It integrates this data with a diverse array of environmental and control datasets, including PRISM climate data, the National Land Cover Database (NLCD), elevation, aspect, grade, and geographic coordinates (latitude and longitude). The primary goal is to leverage these integrated datasets to forecast ASO SWE for a 20-year period. The developed predictive models are further used to estimate expected streamflow from snowpack using the M4 model, offering valuable insights for water resource management and ecological research.
