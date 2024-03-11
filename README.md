@@ -15,9 +15,7 @@ This repository offers a comprehensive framework for processing and analyzing sn
 
 - **Visualization Tools**: Offers a suite of visualization utilities for mapping SWE distributions, environmental factors, and streamflow predictions, simplifying data and predictions interpretation.
 
-## Getting Started
-
-### 1. Download Necessary Files
+## Workflow
 
 #### Download ASO Data
 ```
