@@ -59,6 +59,11 @@ python 3-Predictions.py
 python 4-M4-Data-Step.py
 ```
 
+#### Run M4 models
+```
+./process_M4.sh
+```
+
 #### Generate Figures
 ```
 Rscript 5-Figures.R
