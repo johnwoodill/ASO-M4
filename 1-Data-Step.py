@@ -186,26 +186,33 @@ def bind_data(basin_name, shape_loc, min_year, max_year):
 
 def main(basin_name, min_year, max_year):
     
+    # Get shapefile location and load
     shape_loc = glob.glob(f"data/{basin_name}/shapefiles/*.shp")[0]
-    
     gdf = gpd.read_file(shape_loc)
     gdf = gdf.to_crs(epsg=4326)
 
+    # Setup directory structure
     setup_basin(basin_name)
 
+    # Process ASO SWE
     proc_aso_swe(gdf, basin_name)
 
-    # TO DO --- ADD FUNCTION TO PROCESS THIS
+    # Process grade and elecation
     proc_grade_elev_watershed(basin_name, gdf)
 
+    # Process elevation grade and aspect
     proc_elev_grade_aspect_lookup(basin_name, shape_loc)
 
+    # Process prism data
     proc_basin_prism(gdf, basin_name, min_year, max_year)
 
+    # Process prism lookup 
     proc_prism_lookup(basin_name, shape_loc)
 
+    # Process NLCD data
     proc_nlcd(gdf, shape_loc, basin_name)
 
+    # Bind everything together
     bind_data(basin_name, shape_loc, min_year=min_year, max_year=max_year)
 
 
