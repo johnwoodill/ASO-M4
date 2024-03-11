@@ -5,7 +5,7 @@ This repository offers a comprehensive framework for processing and analyzing sn
 
 ## Key Features
 
-- **Data Integration**: Includes scripts and notebooks for merging ASO SWE data with environmental variables like PRISM climate records, NLCD land cover, and topographic factors (elevation, aspect, grade), along with geographical positioning data.
+- **Data Integration**: Includes scripts for merging ASO SWE data with environmental variables like PRISM climate records, NLCD land cover, and topographic factors (elevation, aspect, grade), along with geographical positioning data.
 
 - **Historical Analysis**: Provides tools for analyzing historical trends in snow water equivalent data and related environmental factors over a specified period.
 
