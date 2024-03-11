@@ -35,10 +35,6 @@ def checkboard_cv_model(watershed):
 
     mdat = pd.read_parquet(f"data/{watershed}/processed/model_data_elevation_prism_sinceSep_nlcd.parquet")
     
-    # mdat = mdat.assign(year = pd.to_datetime(mdat['date']).dt.strftime("%Y"),
-    #     month = pd.to_datetime(mdat['date']).dt.strftime("%m"),
-    #     doy = pd.to_datetime(mdat['date']).dt.strftime("%j"))
-
     # Convert the 'date' column to datetime just once
     mdat['date'] = pd.to_datetime(mdat['date'])
 
@@ -48,8 +44,6 @@ def checkboard_cv_model(watershed):
         month=mdat['date'].dt.month.astype(str).str.zfill(2),
         doy=mdat['date'].dt.dayofyear.astype(str).str.zfill(3)
     )
-
-    # mdat = mdat[mdat['year'].isin(["2021", "2022", "2023"])].reset_index(drop=True)
 
     X = mdat[['year', 'snow', 'tmean', 'ppt', 'month', 'doy', 
               'lat', 'lon', 'lat_x_lon', 'elevation', 'slope', 'aspect', 
@@ -239,17 +233,13 @@ def train_full_model(watershed):
 
 if __name__ == "__main__":
 
-    watershed = "Tuolumne_Watershed"
-
-    watershed = "Blue_Dillon_Watershed"
-
-    watershed = "Dolores_Watershed"
-
-    watershed = "Conejos_Watershed"
-
-    checkboard_cv_model(watershed)    
-
-    train_full_model(watershed)
+    # Debugging constants
+    # watershed = "Tuolumne_Watershed"
+    # watershed = "Blue_Dillon_Watershed"
+    # watershed = "Dolores_Watershed"
+    # watershed = "Conejos_Watershed"
+    # checkboard_cv_model(watershed)    
+    # train_full_model(watershed)
 
     [checkboard_cv_model(x) for x in ['Tuolumne_Watershed', 
                                    'Blue_Dillon_Watershed', 

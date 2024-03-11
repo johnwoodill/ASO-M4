@@ -98,18 +98,6 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     decimal_point = 4
     gdf = gpd.read_file(shape_loc)
     gdf = gdf.to_crs(epsg=4326)
-    # gdf = gdf.set_crs("EPSG:4326")  # Replace EPSG:4326 with your CRS
-
-    # Get ASO Data
-    # aso_dat = proc_ASO_SWE_shp(gdf)
-    # aso_dat = aso_dat.dropna()
-    # aso_dat = aso_dat[aso_dat['SWE'] >= 0]
-
-    # aso_dat = aso_dat.assign(lat = np.round(aso_dat['lat'], 4),
-    #                          lon = np.round(aso_dat['lon'], 4))
-
-    # # Different from data step
-    # aso_dat['lat_lon'] = aso_dat['lat'].astype(str) + "_" + aso_dat['lon'].astype(str)
 
     aso_dat = pd.read_csv(f"data/{watershed}/processed/aso_basin_data.csv")
 
@@ -129,18 +117,8 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     # Get elevation data
     aso_elev = pd.read_csv(f"data/{watershed}/processed/aso_elev_grade_aspect.csv")
     aso_elev.columns = ['lat', 'lon', 'lat_lon', 'elevation', 'slope', 'aspect']
-    # aso_elev = pd.read_parquet(f"data/{watershed}/processed/aso_elevation.parquet")
-    # aso_elev.columns = ['lat', 'lon', 'elevation']
-
-    # aso_elev = aso_elev.assign(lat = np.round(aso_elev['lat'], 4),
-    #                          lon = np.round(aso_elev['lon'], 4))
-
-    # aso_elev['lat_lon'] = aso_elev['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_elev['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
-
-    # aso_elev = aso_elev.assign(lat_lon = aso_elev['lat'].astype(str) + "_" + aso_elev['lon'].astype(str))
     aso_elev = aso_elev[['lat_lon', 'elevation', 'slope', 'aspect']]
-    # aso_elev = aso_elev.drop_duplicates(subset=['lat_lon'])
-
+    
     # Prism data
     prism_filename = glob.glob(f"data/{watershed}/processed/*PRISM*")
     prism_dat = pd.read_csv(prism_filename[0])
@@ -151,14 +129,6 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     # Extract the month and year using vectorized operations
     prism_dat['month'] = prism_dat['date'].dt.month  # This will already be integer
     prism_dat['year'] = prism_dat['date'].dt.year  
-
-    # prism_dat = prism_dat.assign(date = pd.to_datetime(prism_dat['date'], format = "%Y%m%d"))
-    # prism_dat = prism_dat.assign(month = pd.to_datetime(prism_dat['date']).dt.strftime("%m"))
-    # prism_dat = prism_dat.assign(year = pd.to_datetime(prism_dat['date']).dt.strftime("%Y"))
-
-    # prism_dat = prism_dat.assign(month = prism_dat['month'].astype(int),
-    #                              year = prism_dat['year'].astype(int))
-
     prism_dat = prism_dat.pivot_table(index=['date', 'gridNumber', 'month', 'year'],
                                 columns='var', aggfunc=np.nanmean,
                                 values='value').reset_index()
@@ -184,7 +154,6 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     aso_prism_lookup = pd.read_csv(f"data/{watershed}/processed/aso_prism_lookup.csv")
     aso_prism_lookup['lat_lon'] = aso_prism_lookup['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + aso_prism_lookup['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
 
-    # aso_prism_lookup = aso_prism_lookup.assign(lat_lon = aso_prism_lookup['lat'].astype(str) + "_" + aso_prism_lookup['lon'].astype(str))
     aso_prism_lookup = aso_prism_lookup.drop_duplicates(subset=['lat_lon'])
     aso_prism_lookup = aso_prism_lookup[['lat_lon', 'prism_grid']]
 
@@ -199,12 +168,7 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     # Merge NLCD
     print("Processing NLCD")
     ldat = pd.read_csv(f"data/{watershed}/processed/aso_nlcd_lookup.csv")
-    # ldat = ldat.assign(lat = np.round(ldat['lat'], 4),
-    #                    lon = np.round(ldat['lon'], 4))
-    
     ldat['lat_lon'] = ldat['lat'].apply(lambda x: f"{x:.{decimal_point}f}") + "_" + ldat['lon'].apply(lambda x: f"{x:.{decimal_point}f}")
-
-    # ldat = ldat.assign(lat_lon = ldat['lat'].astype(str) + "_" + ldat['lon'].astype(str))
     ldat = ldat.drop_duplicates(subset='lat_lon')
     ldat = ldat[['lat_lon', 'nlcd_grid']]
 
@@ -222,12 +186,8 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     ldat_2019 = ldat_2019.assign(lat_lon = ldat_2019['lat'].astype(str) + "_" + ldat_2019['lon'].astype(str))
     ldat_2019 = ldat_2019.drop(columns=['year'])
 
-    # mdat['year'] = pd.to_datetime(mdat['date']).dt.year
-
     # Model data 2013
     mdat1 = mdat[mdat['year'] <= 2013]
-
-    # [check_unique_lat_lon_by_date(mdat1, x) for x in mdat1['year'].unique()]
 
     # Merge NLCD
     mdat1 = mdat1.drop(columns=['lat', 'lon'])
@@ -235,8 +195,6 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
 
     mdat1 = mdat1.rename(columns={'lat_lon_x': 'lat_lon'})
     mdat1 = mdat1.drop(columns=['lat_lon_y'])
-
-    # [check_unique_lat_lon_by_date(mdat1, x) for x in mdat1['year'].unique()]
 
     # Model data 2016, 2017
     mdat2 = mdat[(mdat['year'] >= 2014) & (mdat['year'] <= 2017)]
@@ -248,8 +206,6 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
     mdat2 = mdat2.rename(columns={'lat_lon_x': 'lat_lon'})
     mdat2 = mdat2.drop(columns=['lat_lon_y'])
 
-    # [check_unique_lat_lon_by_date(mdat2, x) for x in mdat2['year'].unique()]
-
     # Model data 2018-2022
     mdat3 = mdat[mdat['year'] >= 2018]
 
@@ -259,8 +215,6 @@ def proc_prediction(waterbasin, shape_loc, pred_dates):
 
     mdat3 = mdat3.rename(columns={'lat_lon_x': 'lat_lon'})
     mdat3 = mdat3.drop(columns=['lat_lon_y'])
-
-    # [check_unique_lat_lon_by_date(mdat3, x) for x in mdat3['year'].unique()]
 
     mdat_nlcd = pd.concat([mdat1, mdat2, mdat3], axis=0)
 

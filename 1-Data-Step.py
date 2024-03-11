@@ -213,21 +213,23 @@ def main(basin_name, min_year, max_year):
 
 if __name__ == "__main__":
 
-    fire.Fire(main)
-
     basin_name = "Tuolumne_Watershed"
     min_year = 1981
-    max_year = 2021  # Needs to be 2021
+    max_year = 2021 
+    main(basin_name, min_year, max_year)
 
     basin_name = "Blue_Dillon_Watershed"
     min_year = 1981
     max_year = 2022
+    main(basin_name, min_year, max_year)
 
     basin_name = "Dolores_Watershed"
     min_year = 1981
     max_year = 2022
+    main(basin_name, min_year, max_year)
 
 
     basin_name = "Conejos_Watershed"
     min_year = 1981
     max_year = 2022
+    main(basin_name, min_year, max_year)

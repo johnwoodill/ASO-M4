@@ -2,7 +2,7 @@ library(tidyverse)
 
 # setwd("~/Projects/M4/examples/Tuolumne_figures/")
 
-watershed = "Tuolumne"
+watershed = "Tuolumne_Watershed"
 short_name = "Tuolumne"
 
 watershed = "Blue_Dillon_Watershed"
@@ -17,7 +17,6 @@ short_name = "Dolores"
 
 
 m4_example_dir = "~/Projects/M4/examples/"
-
 setwd(m4_example_dir)
 
 
@@ -74,54 +73,57 @@ get_model_data = function(watershed, short_name){
   mod_adat = proc_model_data(paste0(watershed, "_aso_swe/"))
   mod_badat = proc_model_data(paste0(watershed, "_baseline_aso_swe/"))
   mod_batdat = proc_model_data(paste0(watershed, "_baseline_aso_swe_temp_precip/"))
+  mod_batdat2 = proc_model_data(paste0(watershed, "_aso_temp_precip/"))
   
   pdat1 = rbind(mod_bdat, mod_adat)
-  pdat1 = rbind(mod_bdat, mod_adat, mod_badat, mod_batdat)
+  pdat1 = rbind(mod_bdat, mod_adat, mod_badat, mod_batdat, mod_batdat2)
   
   pdat1$folder = factor(pdat1$folder,                      
                         levels = c(paste0(watershed, "_aso_swe"), 
                                    paste0(watershed, "_baseline"), 
                                    paste0(watershed, "_baseline_aso_swe"), 
-                                   paste0(watershed, "_baseline_aso_swe_temp_precip")),
+                                   paste0(watershed, "_baseline_aso_swe_temp_precip"),
+                                   paste0(watershed, "_aso_temp_precip")),
                         labels = c(paste0(short_name, "-ASO"), 
                                    paste0(short_name, "-Baseline"), 
                                    paste0(short_name, "-Baseline + ASO"), 
-                                   paste0(short_name, "-Baseline + ASO + Temp + Precip")))
+                                   paste0(short_name, "-Baseline + ASO + Temp + Precip"),
+                                   paste0(short_name, "-ASO + Temp + Precip")))
   
   
   return(pdat1)
 }
 
 
-
-watershed = "Blue_Dillon_Watershed"
-shortname = "Blue-River"
 get_acc_data = function(watershed, short_name){
   acc_bdat = proc_accuracy(paste0(watershed, "_baseline/"))
   acc_adat = proc_accuracy(paste0(watershed, "_aso_swe/"))
   acc_badat = proc_accuracy(paste0(watershed, "_baseline_aso_swe/"))
   acc_batdat = proc_accuracy(paste0(watershed, "_baseline_aso_swe_temp_precip/"))
+  acc_batdat2 = proc_accuracy(paste0(watershed, "_aso_temp_precip/"))
   
   pdat2 = rbind(acc_bdat, acc_adat)
-  pdat2 = rbind(acc_bdat, acc_adat, acc_badat, acc_batdat)
+  pdat2 = rbind(acc_bdat, acc_adat, acc_badat, acc_batdat, acc_batdat2)
   pdat2
   
   pdat2$folder = factor(pdat2$folder, 
                         levels = c(paste0(watershed, "_aso_swe"), 
                                    paste0(watershed, "_baseline"), 
                                    paste0(watershed, "_baseline_aso_swe"), 
-                                   paste0(watershed, "_baseline_aso_swe_temp_precip")),
+                                   paste0(watershed, "_baseline_aso_swe_temp_precip"),
+                                   paste0(watershed, "_aso_temp_precip")),
                         labels = c(paste0(short_name, "-ASO"), 
                                    paste0(short_name, "-Baseline"), 
                                    paste0(short_name, "-Baseline + ASO"), 
-                                   paste0(short_name, "-Baseline + ASO + Temp + Precip")))
+                                   paste0(short_name, "-Baseline + ASO + Temp + Precip"),
+                                   paste0(short_name, "-ASO + Temp + Precip")))
   
   return(pdat2)
 }
 
 
-pdat1 = get_model_data(watershed)
-pdat2 = get_acc_data(watershed)
+pdat1 = get_model_data(watershed, short_name)
+pdat2 = get_acc_data(watershed, short_name)
 
 
 ggplot(filter(pdat2, metric %in% c("Rsqrd", "RMSE") & folder == paste0(short_name, "-Baseline")), aes(model, value, color=factor(type))) + 
@@ -209,8 +211,8 @@ ggplot(filter(pdat2, metric %in% c("RMSE") & type == "outsample"), aes(model, va
 
 # ------------------------------------
 # All Watersheds
-tuolumne_mdat = get_acc_data("Tuolumne", "Tuolumne")
-blueriver_mdat = get_acc_data("Blue_Dillon_Watershed", "Blue")
+tuolumne_mdat = get_acc_data("Tuolumne_Watershed", "Tuolumne")
+blueriver_mdat = get_acc_data("Blue_Dillon_Watershed", "Blue River")
 dolores_mdat = get_acc_data("Dolores_Watershed", "Dolores")
 conejos_mdat = get_acc_data("Conejos_Watershed", "Conejos")
 
@@ -221,9 +223,17 @@ watersheds_rsq = filter(watersheds, type == "outsample" & model == "ensemble" & 
 watersheds_rsq = watersheds_rsq %>%
                 separate(col = folder, into = c("watershed", "model"), sep = "-", extra = "merge")
 
+watersheds_rmse = filter(watersheds, type == "outsample" & model == "ensemble" & metric == "RMSE")
+watersheds_rmse = watersheds_rmse %>%
+                separate(col = folder, into = c("watershed", "model"), sep = "-", extra = "merge")
+
+filter(watersheds_rmse, watershed == "Conejos")
+filter(watersheds_rsq, watershed == "Conejos")
+filter()
 
 ggplot(watersheds_rsq, aes(watershed, value, color=model)) + 
   geom_point(shape=15, size=5) + 
+  geom_label(aes(label = round(value, 2)), nudge_x = 0.1) +
   theme_minimal(15) +
   labs(x=NULL, y=NULL, color=NULL) +
   theme(panel.border = element_rect(color = "black", fill=NA, size=1), 
@@ -243,9 +253,32 @@ watersheds_rsq = watersheds_rsq %>%
 watersheds_rsq = watersheds_rsq %>% group_by(model) %>% 
                 separate(col = folder, into = c("watershed", "model"), sep = "-", extra = "merge")
 
-ggplot(watersheds_rsq, aes(model, value, color=new_model)) + 
-  geom_point(shape=15, size=5) + 
+
+
+watersheds_rmse = filter(watersheds, type == "outsample" & metric == "RMSE")
+
+watersheds_rmse = watersheds_rmse %>%
+                separate(col = folder, into = c("watershed", "new_model"), sep = "-", extra = "merge")
+
+
+watersheds_rmse = watersheds_rmse %>% group_by(model) %>% 
+                separate(col = folder, into = c("watershed", "model"), sep = "-", extra = "merge")
+
+
+tdat = filter(watersheds_rsq, watershed == "Dolores")
+tdat = distinct(tdat)
+View(tdat)
+
+tdat = filter(watersheds_rmse, watershed == "Conejos")
+tdat = distinct(tdat)
+View(tdat)
+
+
+ggplot(watersheds_rsq, aes(model, value, shape=new_model)) + 
+  # geom_point(shape=15, size=5) +
+  geom_point(size=4) + 
   theme_minimal(15) +
+  # scale_color_viridis_d() +
   labs(x=NULL, y=NULL, color=NULL) +
   theme(panel.border = element_rect(color = "black", fill=NA, size=1), 
         legend.background = element_rect(color = "black", fill = NA, size = .5),

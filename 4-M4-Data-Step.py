@@ -47,9 +47,6 @@ def get_nrcs_Tuolumne_snotel():
         )
     ))
 
-    # save processed data
-    # nrdat.to_csv(f"data/{dir_name}/{dir_name}_NRCS_SNOTEL_data.csv", index = False)
-
     nrdat = nrdat.drop(columns=['Date'])
     nrdat.insert(0, 'year', nrdat.pop('year'))
 
@@ -340,12 +337,13 @@ def merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10):
 
 if __name__ == "__main__":
 
-    # Setup directories for processing data for region
-    watershed = "Tuolumne_Watershed"
-    shapefile_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
-    
+    # ---------------------------------------------
+    # Tuolumne Watershed 
     min_year = 1981
     max_year = 2021
+    
+    watershed = "Tuolumne_Watershed"
+    shapefile_loc = glob.glob(f"data/{watershed}/shapefiles/*.shp")[0]
 
     gdf = gpd.read_file(shapefile_loc)
     gdf = gdf.to_crs(epsg=4326)
@@ -406,15 +404,6 @@ if __name__ == "__main__":
 
     setup_dirs(watershed)
 
-    # No Snotel stations
-    # snotel_dat = get_snotel(gdf)
-
-    # Lily Pond (not in grid, but in Conejos county)
-    # is_point_in_geodf(gdf, 37.38, -106.55)
-
-    # Cumbres Treselt (not in grid, but in Conejos county)
-    # is_point_in_geodf(gdf, 37.02, -106.45)
-
     snow1 = proc_snotel("580:CO:SNTL")
     snow2 = proc_snotel("431:CO:SNTL")
 
@@ -426,31 +415,4 @@ if __name__ == "__main__":
     prism_dat = get_prism(watershed, min_year, max_year)
     merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=8)
 
-
-
-
-    # ------------------------------------------------
-    # For conda environment reqs
-    # conda create --name M4 r=3.6 r-base
-    # conda activate M4
-
-    # sudo apt-get install libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libnlopt libnlopt-dev
-
-    # conda install -c conda-forge r-forecast r-qrnn r-e1071 r-akima r-genalg r-doParallel r-foreach 
-    #                              r-quantreg r-quantregGrowth r-matrixStats r-randomForest r-nloptr
-
-    # Rscript -e "install.packages('monmlp', repos='http://cran.rstudio.com/')"
-
-    # rm Rplot*
-    # Rscript MMPE-Main_MkII.R
-
-
-
-
-
-Blue_Dillon_Watershed_aso_swe       
-Blue_Dillon_Watershed_aso_swe_total 
-Blue_Dillon_Watershed_baseline      
-Blue_Dillon_Watershed_baseline_aso_swe
-Blue_Dillon_Watershed_baseline_aso_swe_temp_precip
 
