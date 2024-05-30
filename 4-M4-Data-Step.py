@@ -297,7 +297,9 @@ def merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=10):
     print("Created elevation bins")
 
     # Aggregate ASO ASW data by year and elevation bin
+    # adat = adat.groupby(['year', 'elevation_bin']).agg({'swe_pred': np.mean}).reset_index()
     adat = adat.groupby(['year', 'elevation_bin']).agg({'swe_pred': sum}).reset_index()
+    
     adat = adat.sort_values('year')
     adat = adat.pivot(index='year', columns='elevation_bin', values='swe_pred').add_prefix('elevbin_').reset_index()
     print("Aggregated and pivoted ASO ASW data")
@@ -425,32 +427,4 @@ if __name__ == "__main__":
     streamGage_dat = get_flowrate("08246500:CO:USGS", "1981-01-01", "2023-09-30")
     prism_dat = get_prism(watershed, min_year, max_year)
     merge_save(watershed, snotel_dat, streamGage_dat, prism_dat, num_bins=8)
-
-
-
-
-    # ------------------------------------------------
-    # For conda environment reqs
-    # conda create --name M4 r=3.6 r-base
-    # conda activate M4
-
-    # sudo apt-get install libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libnlopt libnlopt-dev
-
-    # conda install -c conda-forge r-forecast r-qrnn r-e1071 r-akima r-genalg r-doParallel r-foreach 
-    #                              r-quantreg r-quantregGrowth r-matrixStats r-randomForest r-nloptr
-
-    # Rscript -e "install.packages('monmlp', repos='http://cran.rstudio.com/')"
-
-    # rm Rplot*
-    # Rscript MMPE-Main_MkII.R
-
-
-
-
-
-Blue_Dillon_Watershed_aso_swe       
-Blue_Dillon_Watershed_aso_swe_total 
-Blue_Dillon_Watershed_baseline      
-Blue_Dillon_Watershed_baseline_aso_swe
-Blue_Dillon_Watershed_baseline_aso_swe_temp_precip
 
